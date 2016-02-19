@@ -1,15 +1,22 @@
 package layout.view;
 
+import java.awt.BorderLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javax.swing.AbstractAction;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JScrollPane;
+import javax.swing.JToolBar;
+
 import layout.controller.Controller;
 import layout.model.Model;
 import layout.view.actions.ExitAction;
 import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
-
-import javax.swing.*;
-import java.awt.BorderLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import layout.view.actions.ToggleAction;
 
 /**
  * User: Alan P. Sexton
@@ -28,6 +35,8 @@ public class View extends JFrame
     @SuppressWarnings("unused")
 	private Controller controller;
     private JScrollPane canvasScrollPane;
+    private boolean isDisplayEnabled;
+    private AbstractAction toggleAction;
 
     public View(Model model, Controller controller)
     {
@@ -55,6 +64,10 @@ public class View extends JFrame
         final AbstractAction exitAction = new ExitAction(model, this, controller);
         AbstractAction openAction = new OpenAction(model, this, controller);
         AbstractAction longRunningAction = new LongRunningAction(model, this, controller);
+        toggleAction = new ToggleAction(model, this, controller);
+        toggleAction.setEnabled(false);
+        
+        isDisplayEnabled = true;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter()
@@ -72,6 +85,7 @@ public class View extends JFrame
         fileMenu.add(longRunningAction);
         fileMenu.addSeparator();
         fileMenu.add(exitAction);
+        fileMenu.add(toggleAction);
 
         JMenuBar menuBar;
 
@@ -89,6 +103,7 @@ public class View extends JFrame
         toolBar.addSeparator();
         toolBar.add(openAction);
         toolBar.add(longRunningAction);
+        toolBar.add(toggleAction);
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -98,6 +113,7 @@ public class View extends JFrame
 
     public void adaptToNewImage()
     {
+    	toggleAction.setEnabled(true);
         setCanvasSize();
     }
 
@@ -122,5 +138,15 @@ public class View extends JFrame
     protected JScrollPane getCanvasScrollPane()
     {
         return canvasScrollPane;
+    }
+    
+    public boolean getIsDisplayEnabled(){
+    	return isDisplayEnabled;
+    }
+    
+    public void toggleDisplay(){
+    	canvasScrollPane.setEnabled(false);
+    	isDisplayEnabled = !isDisplayEnabled;
+    	canvas.repaint();
     }
 }

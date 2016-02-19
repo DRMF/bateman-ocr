@@ -115,6 +115,7 @@ public class View extends JFrame
     {
     	toggleAction.setEnabled(true);
         setCanvasSize();
+        canvas.repaint();
     }
 
 

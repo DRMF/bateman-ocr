@@ -4,7 +4,6 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
-import javax.swing.KeyStroke;
 
 import layout.controller.Controller;
 import layout.model.Model;
@@ -18,13 +17,14 @@ public class ToggleAction extends AbstractAction {
 	@SuppressWarnings("unused")
 	private Model model;
 	private View view;
+	@SuppressWarnings("unused")
 	private Controller controller;
 
 	{
-		putValue(NAME, "Quit");
+		putValue(NAME, "Toggle");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/exit.png")));
 		putValue(SHORT_DESCRIPTION, "Toggles display of image");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control Q"));
+		//putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control Q"));
 
 	}
 

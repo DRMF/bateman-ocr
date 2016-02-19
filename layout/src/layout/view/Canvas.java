@@ -23,7 +23,6 @@ class Canvas extends JPanel {
 	 */
 	private static final long serialVersionUID = 1L;
 	private Model model;
-	@SuppressWarnings("unused")
 	private View view;
 
 	private CanvasMouseListener mouseListener;

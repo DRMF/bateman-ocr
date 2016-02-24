@@ -16,7 +16,8 @@ import layout.model.Model;
 import layout.view.actions.ExitAction;
 import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
-import layout.view.actions.ToggleAction;
+import layout.view.actions.ToggleBoxAction;
+import layout.view.actions.ToggleImageAction;
 
 /**
  * User: Alan P. Sexton
@@ -35,8 +36,11 @@ public class View extends JFrame
     @SuppressWarnings("unused")
 	private Controller controller;
     private JScrollPane canvasScrollPane;
-    private boolean isDisplayEnabled;
-    private AbstractAction toggleAction;
+    
+    private boolean isImageDisplayEnabled;
+    private boolean isBoxDisplayEnabled;
+    private AbstractAction toggleImageAction;
+    private AbstractAction toggleBoxAction;
 
     public View(Model model, Controller controller)
     {
@@ -61,13 +65,17 @@ public class View extends JFrame
         // exitAction has to be final because we reference it from within
         // an inner class
 
+        isImageDisplayEnabled = true;
+        isBoxDisplayEnabled = false;
+        
         final AbstractAction exitAction = new ExitAction(model, this, controller);
         AbstractAction openAction = new OpenAction(model, this, controller);
         AbstractAction longRunningAction = new LongRunningAction(model, this, controller);
-        toggleAction = new ToggleAction(model, this, controller);
-        toggleAction.setEnabled(false);
+        toggleImageAction = new ToggleImageAction(model, this, controller);
+        toggleImageAction.setEnabled(false);
+        toggleBoxAction = new ToggleBoxAction(model, this, controller);
+        toggleBoxAction.setEnabled(false);
         
-        isDisplayEnabled = true;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter()
@@ -83,9 +91,10 @@ public class View extends JFrame
         fileMenu = new JMenu("File");
         fileMenu.add(openAction);
         fileMenu.add(longRunningAction);
+        fileMenu.add(toggleImageAction);
+        fileMenu.add(toggleBoxAction);
         fileMenu.addSeparator();
         fileMenu.add(exitAction);
-        fileMenu.add(toggleAction);
 
         JMenuBar menuBar;
 
@@ -103,7 +112,8 @@ public class View extends JFrame
         toolBar.addSeparator();
         toolBar.add(openAction);
         toolBar.add(longRunningAction);
-        toolBar.add(toggleAction);
+        toolBar.add(toggleImageAction);
+        toolBar.add(toggleBoxAction);
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -113,7 +123,8 @@ public class View extends JFrame
 
     public void adaptToNewImage()
     {
-    	toggleAction.setEnabled(true);
+    	toggleImageAction.setEnabled(true);
+    	toggleBoxAction.setEnabled(true);
         setCanvasSize();
         canvas.repaint();
     }
@@ -141,13 +152,21 @@ public class View extends JFrame
         return canvasScrollPane;
     }
     
-    public boolean getIsDisplayEnabled(){
-    	return isDisplayEnabled;
+    public boolean getIsImageDisplayEnabled(){
+    	return isImageDisplayEnabled;
     }
     
-    public void toggleDisplay(){
-    	canvasScrollPane.setEnabled(false);
-    	isDisplayEnabled = !isDisplayEnabled;
+    public boolean getIsBoxDisplayEnabled(){
+    	return isBoxDisplayEnabled;
+    }
+    
+    public void toggleImageDisplay(){
+    	isImageDisplayEnabled = !isImageDisplayEnabled;
+    	canvas.repaint();
+    }
+    
+    public void toggleBoxDisplay(){
+    	isBoxDisplayEnabled = !isBoxDisplayEnabled;
     	canvas.repaint();
     }
 }

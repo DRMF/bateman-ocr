@@ -4,12 +4,13 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
+import javax.swing.KeyStroke;
 
 import layout.controller.Controller;
 import layout.model.Model;
 import layout.view.View;
 
-public class ToggleAction extends AbstractAction {
+public class ToggleBoxAction extends AbstractAction {
 	/**
 	 * 
 	 */
@@ -21,14 +22,14 @@ public class ToggleAction extends AbstractAction {
 	private Controller controller;
 
 	{
-		putValue(NAME, "Toggle");
+		putValue(NAME, "Toggle Box");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/exit.png")));
-		putValue(SHORT_DESCRIPTION, "Toggles display of image");
-		//putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control Q"));
+		putValue(SHORT_DESCRIPTION, "Toggles display of bounding boxes");
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control B"));
 
 	}
 
-	public ToggleAction(Model model, View view, Controller controller)
+	public ToggleBoxAction(Model model, View view, Controller controller)
 	    {
 	        this.view = view;
 	        this.model = model;
@@ -36,6 +37,6 @@ public class ToggleAction extends AbstractAction {
 	    }
 
 	public void actionPerformed(ActionEvent e) {
-		view.toggleDisplay();
+		view.toggleBoxDisplay();
 	}
 }

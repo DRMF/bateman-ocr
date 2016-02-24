@@ -62,7 +62,7 @@ class Canvas extends JPanel {
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
 
-		if (view.getIsDisplayEnabled()) {
+		if (view.getIsImageDisplayEnabled()) {
 			// Using g or g2, draw on the full size "canvas":
 			Graphics2D g2 = (Graphics2D) g;
 			//
@@ -89,7 +89,7 @@ class Canvas extends JPanel {
 					g2.setColor(col);
 				}
 
-				if (!components.isEmpty()) {
+				if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
 					Color col = g2.getColor();
 					g2.setColor(Color.RED);
 					for (Component component : components) {

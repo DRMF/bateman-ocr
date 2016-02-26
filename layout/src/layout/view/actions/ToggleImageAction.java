@@ -23,7 +23,7 @@ public class ToggleImageAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Toggle Image");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/exit.png")));
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/toggleimage.png")));
 		putValue(SHORT_DESCRIPTION, "Toggles display of image");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control I"));
 

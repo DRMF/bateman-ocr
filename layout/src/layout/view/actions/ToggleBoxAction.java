@@ -23,7 +23,7 @@ public class ToggleBoxAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Toggle Box");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/exit.png")));
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
 		putValue(SHORT_DESCRIPTION, "Toggles display of bounding boxes");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control B"));
 

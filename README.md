@@ -8,8 +8,7 @@ All Java code should use the code format obtained by loading
 EclipseJavaFormat_APS.xml into Eclipse
 (Window|Preferences|Java|Formatter|Import...)
 
-========================
-Sub-project Layout
+## Sub-project Layout
 
 This project is to analyse the layout of pages extracted from the Bateman
 Manuscript volumes in order to identify areas of the page that correspond to
@@ -54,8 +53,7 @@ To evaluate the system, a visual representation of the areas found and their
 types should be overlaid on the image of underlying page. This allows for quick
 manual validation.
 
-========================
-Sub-project Ground Truth Engine
+## Sub-project Ground Truth Engine
 
 The ground truth engine is a tool to assist in manual classification of large
 numbers of connected components in order to provide training and test sets for

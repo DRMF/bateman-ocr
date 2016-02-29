@@ -1,15 +1,17 @@
 package layout.model;
 
-import layout.utils.ImageFile;
-import layout.utils.UnsupportedImageTypeException;
-
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import layout.utils.ImageFile;
+import layout.utils.UnsupportedImageTypeException;
 
 /**
  * User: Alan P. Sexton
@@ -28,6 +30,7 @@ public class Model
 {
     private BufferedImage image = null;
     private List<Rectangle> rects = new ArrayList<Rectangle>();
+    private List<Component> components = new ArrayList<Component>();
 
     public Model()
     {
@@ -41,6 +44,11 @@ public class Model
     public List<Rectangle> getRects()
     {
         return rects;
+    }
+    
+    public List<Component> getComponents()
+    {
+    	return components;
     }
 
     /**
@@ -70,6 +78,7 @@ public class Model
     public void addRect(Rectangle rect)
     {
         rects.add(rect);
+
     }
 
     /**
@@ -91,6 +100,29 @@ public class Model
             throw new IOException("Image file contains no images");
         BufferedImage bi = newImageFile.getBufferedImage(0);
         setImage(bi);
+    }
+    
+    public void loadCSV(File file)
+    		throws IOException, UnsupportedImageTypeException
+    {
+    	String imagePath = file.getPath();
+    	String CSVPath = imagePath.substring(0, imagePath.lastIndexOf('.')) + ".csv";
+    	BufferedReader reader = new BufferedReader(new FileReader(CSVPath));
+    	
+    	components.clear();
+    	String line = reader.readLine();
+    	while ((line = reader.readLine()) != null){
+    		String[] cols = line.split(",");
+    		
+    		int x = Integer.parseInt(cols[5]);
+    		int y = Integer.parseInt(cols[6]);
+    		int w = Integer.parseInt(cols[7]);
+    		int h = Integer.parseInt(cols[8]);
+    		
+    		components.add(new Component(x, y, w, h));
+    	}
+    	
+    	reader.close();
     }
 
 }

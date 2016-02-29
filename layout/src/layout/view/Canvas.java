@@ -61,10 +61,11 @@ class Canvas extends JPanel {
 	 */
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		
+		// Using g or g2, draw on the full size "canvas":
+		Graphics2D g2 = (Graphics2D) g;
 
 		if (view.getIsImageDisplayEnabled()) {
-			// Using g or g2, draw on the full size "canvas":
-			Graphics2D g2 = (Graphics2D) g;
 			//
 			// The ViewPort is the part of the canvas that is displayed.
 			// By scrolling the ViewPort, you move it across the full size
@@ -74,33 +75,41 @@ class Canvas extends JPanel {
 
 			if (model.getImage() != null) {
 				BufferedImage image = model.getImage();
-				List<Rectangle> rects = model.getRects();
-				List<Component> components = model.getComponents();
 
 				// Draw the display image on the full size canvas
 				g2.drawImage(image, 0, 0, null);
 
-				if (!rects.isEmpty()) {
-					Color col = g2.getColor();
-					g2.setColor(Color.BLUE);
-					for (Rectangle rect : rects) {
-						g2.draw(rect);
-					}
-					g2.setColor(col);
+			}
+			
+		} else {
+			g2.setColor(Color.WHITE);
+			Dimension dim = model.getDimensions();
+			g2.fillRect(0, 0, (int)dim.getWidth(), (int)dim.getHeight());
+		}
+		
+		List<Component> components = model.getComponents();
+		List<Rectangle> rects = model.getRects();
+		
+		if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
+			Color col = g2.getColor();
+			g2.setColor(Color.RED);
+			for (Component component : components) {
+				g2.draw(component.getData());
+			}
+			g2.setColor(col);
+			
+			// In case there is some animation going on (e.g. mouse
+			// dragging), call this to
+			// paint the intermediate images
+			mouseListener.paint(g);
+			
+			if (!rects.isEmpty()) {
+				col = g2.getColor();
+				g2.setColor(Color.BLUE);
+				for (Rectangle rect : rects) {
+					g2.draw(rect);
 				}
-
-				if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
-					Color col = g2.getColor();
-					g2.setColor(Color.RED);
-					for (Component component : components) {
-						g2.draw(component.getData());
-					}
-					g2.setColor(col);
-				}
-				// In case there is some animation going on (e.g. mouse
-				// dragging), call this to
-				// paint the intermediate images
-				mouseListener.paint(g);
+				g2.setColor(col);
 			}
 		}
 	}

@@ -60,6 +60,7 @@ public class Controller
             throws IOException, UnsupportedImageTypeException
     {
         model.loadImage(file);
+        model.loadCSV(file);
         view.adaptToNewImage();
     }
 

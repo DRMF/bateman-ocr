@@ -24,6 +24,7 @@ class Canvas extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private Model model;
 	private View view;
+	private double scale;
 
 	private CanvasMouseListener mouseListener;
 
@@ -49,6 +50,7 @@ class Canvas extends JPanel {
 	public Canvas(Model model, View view, Controller controller) {
 		this.view = view;
 		this.model = model;
+		this.scale = 1;
 		mouseListener = new CanvasMouseListener(model, view, controller);
 		addMouseListener(mouseListener);
 	}
@@ -64,6 +66,7 @@ class Canvas extends JPanel {
 		
 		// Using g or g2, draw on the full size "canvas":
 		Graphics2D g2 = (Graphics2D) g;
+		g2.scale(scale, scale);
 
 		if (view.getIsImageDisplayEnabled()) {
 			//
@@ -116,8 +119,16 @@ class Canvas extends JPanel {
 
 	public Dimension getPreferredSize() {
 		if (model.isActive())
-			return new Dimension(model.getImage().getWidth(), model.getImage().getHeight());
+			return new Dimension((int)(model.getImage().getWidth() * scale), (int)(model.getImage().getHeight() * scale));
 		return new Dimension(0, 0);
+	}
+	
+	public void setScale(double scale) {
+		this.scale = scale;
+	}
+	
+	public double getScale() {
+		return scale;
 	}
 
 }

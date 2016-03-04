@@ -18,6 +18,11 @@ import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
 import layout.view.actions.ToggleBoxAction;
 import layout.view.actions.ToggleImageAction;
+import layout.view.actions.ZoomInAction;
+import layout.view.actions.ZoomOutAction;
+import layout.view.actions.ZoomPageAction;
+import layout.view.actions.ZoomResetAction;
+import layout.view.actions.ZoomWidthAction;
 
 /**
  * User: Alan P. Sexton
@@ -31,8 +36,7 @@ public class View extends JFrame
 	 */
 	private static final long serialVersionUID = 1L;
 	private Canvas canvas = null;
-    @SuppressWarnings("unused")
-	private Model model = null;
+    private Model model = null;
     @SuppressWarnings("unused")
 	private Controller controller;
     private JScrollPane canvasScrollPane;
@@ -41,6 +45,16 @@ public class View extends JFrame
     private boolean isBoxDisplayEnabled;
     private AbstractAction toggleImageAction;
     private AbstractAction toggleBoxAction;
+    private AbstractAction zoomInAction;
+    private AbstractAction zoomOutAction;
+    private AbstractAction zoomResetAction;
+    private AbstractAction zoomWidthAction;
+    private AbstractAction zoomPageAction;
+    
+    private double scaleFactor;
+    
+    private double maxWidthScaleFactor;
+    private double maxHeightScaleFactor;
 
     public View(Model model, Controller controller)
     {
@@ -65,6 +79,8 @@ public class View extends JFrame
         // exitAction has to be final because we reference it from within
         // an inner class
 
+        scaleFactor = 0.1;
+        
         isImageDisplayEnabled = true;
         isBoxDisplayEnabled = false;
         
@@ -75,6 +91,16 @@ public class View extends JFrame
         toggleImageAction.setEnabled(false);
         toggleBoxAction = new ToggleBoxAction(model, this, controller);
         toggleBoxAction.setEnabled(false);
+        zoomInAction = new ZoomInAction(model, this, controller);
+        zoomInAction.setEnabled(false);
+        zoomOutAction = new ZoomOutAction(model, this, controller);
+        zoomOutAction.setEnabled(false);
+        zoomResetAction = new ZoomResetAction(model, this, controller);
+        zoomResetAction.setEnabled(false);
+        zoomWidthAction = new ZoomWidthAction(model, this, controller);
+        zoomWidthAction.setEnabled(false);
+        zoomPageAction = new ZoomPageAction(model, this, controller);
+        zoomPageAction.setEnabled(false);
         
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -93,6 +119,12 @@ public class View extends JFrame
         fileMenu.add(longRunningAction);
         fileMenu.add(toggleImageAction);
         fileMenu.add(toggleBoxAction);
+        fileMenu.addSeparator();
+        fileMenu.add(zoomInAction);
+        fileMenu.add(zoomOutAction);
+        fileMenu.add(zoomResetAction);
+        fileMenu.add(zoomWidthAction);
+        fileMenu.add(zoomPageAction);
         fileMenu.addSeparator();
         fileMenu.add(exitAction);
 
@@ -114,6 +146,12 @@ public class View extends JFrame
         toolBar.add(longRunningAction);
         toolBar.add(toggleImageAction);
         toolBar.add(toggleBoxAction);
+        toolBar.addSeparator();
+        toolBar.add(zoomInAction);
+        toolBar.add(zoomOutAction);
+        toolBar.add(zoomResetAction);
+        toolBar.add(zoomWidthAction);
+        toolBar.add(zoomPageAction);
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -125,6 +163,27 @@ public class View extends JFrame
     {
     	toggleImageAction.setEnabled(true);
     	toggleBoxAction.setEnabled(true);
+    	zoomInAction.setEnabled(true);
+    	zoomOutAction.setEnabled(true);
+    	zoomResetAction.setEnabled(true);
+    	zoomWidthAction.setEnabled(true);
+    	zoomPageAction.setEnabled(true);
+    	
+    	double canvasScrollPaneWidth = (double)canvasScrollPane.getViewport().getSize().width;
+    	double canvasScrollPaneHeight= (double)canvasScrollPane.getViewport().getSize().height;
+    	double modelWidth = (double)model.getDimensions().width;
+    	double modelHeight = (double)model.getDimensions().height;
+    	int verticalScrollBarWidth = canvasScrollPane.getVerticalScrollBar().getPreferredSize().width;
+    	int horizontalScrollBarHeight = canvasScrollPane.getHorizontalScrollBar().getPreferredSize().height;
+    	
+    	maxWidthScaleFactor = canvasScrollPaneWidth / modelWidth;
+    	maxHeightScaleFactor = canvasScrollPaneHeight / modelHeight;
+    	
+    	if(maxWidthScaleFactor > maxHeightScaleFactor)
+    		maxWidthScaleFactor = (canvasScrollPaneWidth - verticalScrollBarWidth) /  modelWidth;
+    	else
+    		maxHeightScaleFactor = (canvasScrollPaneHeight- horizontalScrollBarHeight) / modelHeight;
+    	
         setCanvasSize();
         canvas.repaint();
     }
@@ -168,5 +227,50 @@ public class View extends JFrame
     public void toggleBoxDisplay(){
     	isBoxDisplayEnabled = !isBoxDisplayEnabled;
     	canvas.repaint();
+    }
+    
+    public void setScale(double scale){
+    	canvas.setScale(scale);
+    	setCanvasSize();
+    	canvas.repaint();
+    	
+    	//rounded because of inherent computing errors with doubles
+    	if(Math.round((scale - scaleFactor) * 10000.0) / 10000.0 <= 0)
+    		zoomOutAction.setEnabled(false);
+    	else
+    		zoomOutAction.setEnabled(true);
+    	
+    	if(Math.round((scale - scaleFactor) * 10000.0) / 10000.0 == 1)
+    		zoomResetAction.setEnabled(false);
+    	else
+    		zoomResetAction.setEnabled(true);
+    	
+    	if(scale == maxWidthScaleFactor)
+    		zoomWidthAction.setEnabled(false);
+    	else
+    		zoomWidthAction.setEnabled(true);
+    	
+    	if(scale <= maxHeightScaleFactor && scale <= maxWidthScaleFactor)
+    		zoomPageAction.setEnabled(false);
+    	else
+    		zoomPageAction.setEnabled(true);
+    		
+    	
+    }
+    
+    public double getScale(){
+    	return canvas.getScale();
+    }
+    
+    public double getScaleFactor(){
+    	return scaleFactor;
+    }
+    
+    public double getMaxWidthScaleFactor(){
+    	return maxWidthScaleFactor;
+    }
+    
+    public double getMaxHeightScaleFactor(){
+    	return maxHeightScaleFactor;
     }
 }

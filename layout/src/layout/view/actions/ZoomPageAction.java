@@ -23,8 +23,8 @@ public class ZoomPageAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Zoom Width");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
-		putValue(SHORT_DESCRIPTION, "Resets the zoom of the canvas");
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoompage.png")));
+		putValue(SHORT_DESCRIPTION, "Fits the whole image into the canvas");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control +"));
 
 	}

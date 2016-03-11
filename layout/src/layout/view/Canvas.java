@@ -22,6 +22,11 @@ class Canvas extends JPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	private static final int minArea = 300;
+	private static final int maxArea = 5000;
+	private static final int minInnerWidth = 7;
+	private static final int minOuterWidth = 20;
+	private static final int minTableSide = 100;
 	private Model model;
 	private View view;
 	private double scale;
@@ -95,8 +100,25 @@ class Canvas extends JPanel {
 		
 		if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
 			Color col = g2.getColor();
-			g2.setColor(Color.RED);
 			for (Component component : components) {
+				int biggestBoxLeft = (int) model.getBiggestBox().getData().getX();
+				int biggestBoxRight = biggestBoxLeft + (int) model.getBiggestBox().getData().getWidth();
+				int biggestBoxHeight = (int) model.getBiggestBox().getData().getHeight();
+				int componentX = (int) component.getData().getX();
+				
+				boolean isWithinTable = (biggestBoxHeight > minTableSide && biggestBoxRight - biggestBoxLeft > minTableSide) ? (componentX > biggestBoxLeft && componentX < biggestBoxRight) : true;
+				double area = component.getData().getWidth() * component.getData().getHeight();
+
+				if(area < minArea)
+					g2.setColor(Color.RED);
+				else if(area < maxArea)
+					g2.setColor(Color.GREEN);
+				else
+					g2.setColor(Color.RED);
+
+				if(component.getData().getWidth() < (isWithinTable ? minInnerWidth : minOuterWidth))
+					g2.setColor(Color.RED);
+				
 				g2.draw(component.getData());
 			}
 			g2.setColor(col);

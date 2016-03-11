@@ -31,6 +31,7 @@ public class Model
     private BufferedImage image = null;
     private List<Rectangle> rects = new ArrayList<Rectangle>();
     private List<Component> components = new ArrayList<Component>();
+    private Component biggestBox = null;
 
     public Model()
     {
@@ -49,6 +50,11 @@ public class Model
     public List<Component> getComponents()
     {
     	return components;
+    }
+    
+    public Component getBiggestBox()
+    {
+    	return biggestBox;
     }
 
     /**
@@ -111,6 +117,7 @@ public class Model
     	
     	components.clear();
     	String line = reader.readLine();
+    	int maxArea = 0;
     	while ((line = reader.readLine()) != null){
     		String[] cols = line.split(",");
     		
@@ -118,6 +125,11 @@ public class Model
     		int y = Integer.parseInt(cols[6]);
     		int w = Integer.parseInt(cols[7]);
     		int h = Integer.parseInt(cols[8]);
+    		
+    		if(w * h > maxArea){
+    			maxArea = w * h;
+    			biggestBox = new Component(x, y, w, h);
+    		}
     		
     		components.add(new Component(x, y, w, h));
     	}

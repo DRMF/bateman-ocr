@@ -23,7 +23,7 @@ public class ZoomOutAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Zoom Out");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomout.png")));
 		putValue(SHORT_DESCRIPTION, "Zooms out from the canvas");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control -"));
 

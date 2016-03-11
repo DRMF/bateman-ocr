@@ -23,8 +23,8 @@ public class ZoomInAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Zoom In");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
-		putValue(SHORT_DESCRIPTION, "Magnifies the canvas");
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomin.png")));
+		putValue(SHORT_DESCRIPTION, "Zooms into the canvas");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control +"));
 
 	}

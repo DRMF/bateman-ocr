@@ -23,8 +23,8 @@ public class ZoomResetAction extends AbstractAction {
 
 	{
 		putValue(NAME, "Zoom Reset");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
-		putValue(SHORT_DESCRIPTION, "Resets the zoom of the canvas");
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomreset.png")));
+		putValue(SHORT_DESCRIPTION, "Fits the width of the image to the window");
 		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control +"));
 
 	}

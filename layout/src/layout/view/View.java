@@ -1,6 +1,8 @@
 package layout.view;
 
 import java.awt.BorderLayout;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -56,10 +58,10 @@ public class View extends JFrame
     private double maxWidthScaleFactor;
     private double maxHeightScaleFactor;
 
-    public View(Model model, Controller controller)
+    public View(Model modelObject, Controller controller)
     {
         super("Layout Analyser");
-        this.model = model;
+        this.model = modelObject;
         this.controller = controller;
         controller.addView(this);
 
@@ -110,6 +112,43 @@ public class View extends JFrame
             {
                 exitAction.actionPerformed(null);
             }
+        });
+        
+        addComponentListener(new ComponentListener() {
+
+			@Override
+			public void componentHidden(ComponentEvent arg0) {
+				
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent arg0) {
+				
+			}
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+		    	double canvasScrollPaneWidth = (double)canvasScrollPane.getViewport().getSize().width;
+		    	double canvasScrollPaneHeight= (double)canvasScrollPane.getViewport().getSize().height;
+		    	double modelWidth = (double)model.getDimensions().width;
+		    	double modelHeight = (double)model.getDimensions().height;
+		    	int verticalScrollBarWidth = canvasScrollPane.getVerticalScrollBar().getPreferredSize().width;
+		    	int horizontalScrollBarHeight = canvasScrollPane.getHorizontalScrollBar().getPreferredSize().height;
+		    	
+		    	maxWidthScaleFactor = canvasScrollPaneWidth / modelWidth;
+		    	maxHeightScaleFactor = canvasScrollPaneHeight / modelHeight;
+		    	
+		    	if(maxWidthScaleFactor > maxHeightScaleFactor)
+		    		maxWidthScaleFactor = (canvasScrollPaneWidth - verticalScrollBarWidth) /  modelWidth;
+		    	else
+		    		maxHeightScaleFactor = (canvasScrollPaneHeight- horizontalScrollBarHeight) / modelHeight;
+			}
+
+			@Override
+			public void componentShown(ComponentEvent e) {
+				
+			}
+        	
         });
 
         // Set up the menu bar

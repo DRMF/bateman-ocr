@@ -138,9 +138,10 @@ public class View extends JFrame
 		    	maxWidthScaleFactor = canvasScrollPaneWidth / modelWidth;
 		    	maxHeightScaleFactor = canvasScrollPaneHeight / modelHeight;
 		    	
-		    	if(maxWidthScaleFactor > maxHeightScaleFactor)
+		    	//Take the size of the scroll bars into account
+		    	if(maxWidthScaleFactor > maxHeightScaleFactor && maxHeightScaleFactor > 1)
 		    		maxWidthScaleFactor = (canvasScrollPaneWidth - verticalScrollBarWidth) /  modelWidth;
-		    	else
+		    	else if(maxWidthScaleFactor > maxHeightScaleFactor && maxWidthScaleFactor > 1)
 		    		maxHeightScaleFactor = (canvasScrollPaneHeight- horizontalScrollBarHeight) / modelHeight;
 			}
 
@@ -279,7 +280,7 @@ public class View extends JFrame
     	else
     		zoomOutAction.setEnabled(true);
     	
-    	if(Math.round((scale - scaleFactor) * 10000.0) / 10000.0 == 1)
+    	if(scale == 1)
     		zoomResetAction.setEnabled(false);
     	else
     		zoomResetAction.setEnabled(true);
@@ -289,7 +290,7 @@ public class View extends JFrame
     	else
     		zoomWidthAction.setEnabled(true);
     	
-    	if(scale <= maxHeightScaleFactor && scale <= maxWidthScaleFactor)
+    	if((maxHeightScaleFactor > maxWidthScaleFactor && scale == maxWidthScaleFactor) || (maxHeightScaleFactor < maxWidthScaleFactor && scale == maxHeightScaleFactor))
     		zoomPageAction.setEnabled(false);
     	else
     		zoomPageAction.setEnabled(true);

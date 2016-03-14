@@ -1,6 +1,7 @@
 package layout.view.actions;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -25,7 +26,7 @@ public class ZoomOutAction extends AbstractAction {
 		putValue(NAME, "Zoom Out");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomout.png")));
 		putValue(SHORT_DESCRIPTION, "Zooms out from the canvas");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control -"));
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, ActionEvent.CTRL_MASK));
 
 	}
 

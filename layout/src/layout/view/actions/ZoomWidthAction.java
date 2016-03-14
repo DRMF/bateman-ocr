@@ -1,6 +1,7 @@
 package layout.view.actions;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -25,7 +26,7 @@ public class ZoomWidthAction extends AbstractAction {
 		putValue(NAME, "Zoom Width");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomwidth.png")));
 		putValue(SHORT_DESCRIPTION, "Fits the width of the image to the page");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control +"));
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_W, ActionEvent.CTRL_MASK));
 
 	}
 

@@ -1,6 +1,7 @@
 package layout.view.actions;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -25,7 +26,7 @@ public class ZoomInAction extends AbstractAction {
 		putValue(NAME, "Zoom In");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomin.png")));
 		putValue(SHORT_DESCRIPTION, "Zooms into the canvas");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control +"));
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, ActionEvent.CTRL_MASK));
 
 	}
 

@@ -1,6 +1,7 @@
 package layout.view.actions;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -25,7 +26,7 @@ public class ToggleBoxAction extends AbstractAction {
 		putValue(NAME, "Toggle Box");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
 		putValue(SHORT_DESCRIPTION, "Toggles display of bounding boxes");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control B"));
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
 
 	}
 

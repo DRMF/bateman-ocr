@@ -23,7 +23,7 @@ class Canvas extends JPanel {
 	 */
 	private static final long serialVersionUID = 1L;
 	private static final int minArea = 300;
-	private static final int maxArea = 5000;
+	private static final int maxArea = 15000;
 	private static final int minInnerWidth = 7;
 	private static final int minOuterWidth = 20;
 	private static final int minTableSide = 100;
@@ -72,7 +72,7 @@ class Canvas extends JPanel {
 		// Using g or g2, draw on the full size "canvas":
 		Graphics2D g2 = (Graphics2D) g;
 		g2.scale(scale, scale);
-
+		
 		if (view.getIsImageDisplayEnabled()) {
 			//
 			// The ViewPort is the part of the canvas that is displayed.
@@ -89,6 +89,14 @@ class Canvas extends JPanel {
 
 			}
 			
+			List<Component> deleteThis = model.deleteThisMethod();
+			for(Component c : deleteThis){
+				g2.setColor(Color.BLUE);
+				g2.draw(c.getData());
+				g2.fillRect((int)c.getData().getX(), (int)c.getData().getY(), (int)c.getData().getWidth(), (int)c.getData().getHeight());
+			}
+
+			
 		} else {
 			g2.setColor(Color.WHITE);
 			Dimension dim = model.getDimensions();
@@ -97,6 +105,12 @@ class Canvas extends JPanel {
 		
 		List<Component> components = model.getComponents();
 		List<Rectangle> rects = model.getRects();
+		List<Component> possibleStarts = model.getWords();
+		
+		g2.setColor(Color.BLUE);
+		for(Component c : possibleStarts){
+			g2.draw(c.getData());
+		}
 		
 		if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
 			Color col = g2.getColor();

@@ -8,7 +8,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import layout.utils.ImageFile;
 import layout.utils.UnsupportedImageTypeException;
@@ -28,13 +31,31 @@ import layout.utils.UnsupportedImageTypeException;
  */
 public class Model
 {
+	public enum ListTypes{
+		WORD, MATH, MIX
+	}
+	
     private BufferedImage image = null;
     private List<Rectangle> rects = new ArrayList<Rectangle>();
     private List<Component> components = new ArrayList<Component>();
+    private List<Component> words = new ArrayList<Component>();
+    private List<Component> deleteThis = new ArrayList<Component>();
     private Component biggestBox = null;
+    
+    private int minXDistForWord = -2;
+    private int maxXDistForWord = 15;
+    
+    private Map<int[], ArrayList<Component>> sortedWordComponents;
+    private Map<int[], ArrayList<Component>> sortedPossibleStarts;
+    private Map<int[], ArrayList<Component>> wordLetters;
+    private Map<int[], ListTypes> lineTypes;
 
     public Model()
     {
+    }
+    
+    public List<Component> deleteThisMethod(){
+    	return deleteThis;
     }
 
     public BufferedImage getImage()
@@ -50,6 +71,11 @@ public class Model
     public List<Component> getComponents()
     {
     	return components;
+    }
+    
+    public List<Component> getWords()
+    {
+    	return words;
     }
     
     public Component getBiggestBox()
@@ -116,6 +142,7 @@ public class Model
     	BufferedReader reader = new BufferedReader(new FileReader(CSVPath));
     	
     	components.clear();
+    	words.clear();
     	String line = reader.readLine();
     	int maxArea = 0;
     	while ((line = reader.readLine()) != null){
@@ -135,6 +162,250 @@ public class Model
     	}
     	
     	reader.close();
+    	detectWords();
+    }
+    
+    public void detectWords()
+    {
+    	List<Component> listCopy = new ArrayList<Component>();
+    	sortedWordComponents = new HashMap<int[], ArrayList<Component>>();
+    	sortedPossibleStarts = new HashMap<int[], ArrayList<Component>>();
+    	wordLetters = new HashMap<int[], ArrayList<Component>>();
+    	for(Component c : components){
+    		listCopy.add(c);
+    	}
+    	
+    	for(int i = 0; i < listCopy.size(); i++){
+    		Component out = listCopy.get(i);
+    		
+    		if(!isLetter(out))
+    			continue;
+    		
+    		boolean dictionaryHasHeight = false;
+			double objectY = out.getData().getY();
+			double objectHeight = out.getData().getHeight();
+    		
+    		for(int[] heightRange : sortedWordComponents.keySet()){
+    			if((objectY >= heightRange[0] && objectY <= heightRange[1]) || (heightRange[0] >= objectY && heightRange[1] <= (objectY + objectHeight))){
+    				dictionaryHasHeight = true;
+    				sortedWordComponents.get(heightRange).add(out);
+    				
+    				int[] newHeightRange = new int[] {objectY < heightRange[0] ? (int)objectY : heightRange[0], objectY + objectHeight > heightRange[1] ? (int)(objectY + objectHeight) : heightRange[1]}; 
+  					sortedWordComponents.put(newHeightRange, sortedWordComponents.get(heightRange));
+  					sortedWordComponents.remove(heightRange);
+  					sortedPossibleStarts.put(newHeightRange, sortedPossibleStarts.get(heightRange));
+  					sortedPossibleStarts.remove(heightRange);
+  					
+  					checkIsPossibleStart(out, sortedPossibleStarts, newHeightRange);
+  		    		
+    				break;
+    			}
+    		}
+    		
+    		if(!dictionaryHasHeight){
+    			int[] key = new int[] {(int)objectY, (int)(objectY + objectHeight)};
+    			sortedWordComponents.put(key, new ArrayList<Component>());
+    			sortedWordComponents.get(key).add(out);
+    			sortedPossibleStarts.put(key, new ArrayList<Component>());
+        		
+    			checkIsPossibleStart(out, sortedPossibleStarts, key);
+    		}
+    	}
+    	
+    	for(ArrayList<Component> ac : sortedPossibleStarts.values()){
+	    	for(Component c : ac){
+	    		Rectangle word = new Rectangle(c.getData());
+	    		int[] key = null;
+	    		int[] wordLettersKey = new int[] {(int)c.getData().getX(), (int)c.getData().getY()};
+	    		double objectY = c.getData().getY();
+	    		double objectHeight = c.getData().getHeight();
+	    		
+	    		for(int[] heightRange : sortedWordComponents.keySet()){
+	    			if((objectY >= heightRange[0] && objectY <= heightRange[1]) || (heightRange[0] >= objectY && (heightRange[1] <= (objectY + objectHeight)))){
+	    				key = heightRange;
+	    				break;
+	    			}
+	    		}
+	    		
+	    		wordLetters.put(wordLettersKey, new ArrayList<Component>());
+	    		wordLetters.get(wordLettersKey).add(c);
+	    		
+	    		for(int i = 0; i < sortedWordComponents.get(key).size(); i++){
+	    			Component right = sortedWordComponents.get(key).get(i);
+	    			
+	    			double dx = right.getData().getX() - (word.getX() + word.getWidth());
+	    			if(dx < maxXDistForWord && dx >= minXDistForWord){
+	    				
+	    				wordLetters.get(wordLettersKey).add(right);
+	    				
+	    				double newRight = right.getData().getX() + right.getData().getWidth(); 
+	    				double newTop = word.getY() > right.getData().getY() ? right.getData().getY() : word.getY();
+	    				double newBottom = word.getY() + word.getHeight() < right.getData().getY() + right.getData().getHeight() ? right.getData().getY() + right.getData().getHeight() : word.getY() + word.getHeight();
+	    				
+	    				word = new Rectangle((int)word.getX(), (int)newTop, (int)(newRight - word.getX()), (int)(newBottom - newTop));
+	    				i = 0;
+	    				
+	    			}
+	    		}
+	    		
+	    		words.add(new Component(word));
+	    	}
+    	}
+    	
+    	detectWordLines();
+    }
+    
+    private void detectWordLines()
+    {
+    	List<Component> wordLines = new ArrayList<Component>();
+    	for(int[] key : sortedPossibleStarts.keySet()){
+    		int right = 0;
+    		int left = (int)sortedPossibleStarts.get(key).get(0).getData().getX();
+    		int numLikelyWords = 0;
+    		
+    		for(Component c : sortedPossibleStarts.get(key)){
+    			int[] wordLettersKey = null;
+    			for(int[] ai : wordLetters.keySet()){
+    				if(ai[0] == c.getData().getX() && ai[1] == c.getData().getY()){
+    					wordLettersKey = ai;
+    					break;
+    				}
+    			}
+    			
+    			if(isWord(wordLetters.get(wordLettersKey))){
+    				boolean wordInWord = false;
+    				Rectangle possibleWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
+    				for(Component compare : sortedPossibleStarts.get(key)){
+    					if(compare.equals(c))
+    						continue;	
+    					
+    					if(possibleWordBounds.intersects(compare.getData())){
+    						wordInWord = true;
+    						break;
+    					}
+    				}
+    				
+    				if(!wordInWord){
+    					numLikelyWords++;
+    					deleteThis.add(c);
+    				}
+    			}
+    			
+    			if(c.getData().getX() + c.getData().getWidth() > right)
+    				right = (int)(c.getData().getX() + c.getData().getWidth());
+    			
+    			if(c.getData().getX() < left)
+    				left = (int)c.getData().getX();
+    		}
+
+    		if(numLikelyWords > 4){
+    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
+    		}
+    	}
+    }
+    
+    private void checkIsPossibleStart(Component out, Map<int[], ArrayList<Component>> sortedPossibleStarts, int[] heightRange)
+    {
+    	Iterator<Component> it = components.iterator();
+    	boolean isPossibleStart = true;
+    	
+  		while(it.hasNext()){
+  			Component in = it.next();
+  			if(!isLetter(in))
+  				continue;
+  			
+  			double dx = out.getData().getX() - (in.getData().getX() + in.getData().getWidth());
+  			double dy = (out.getData().getY() + out.getData().getHeight()) - (in.getData().getY() + in.getData().getHeight());
+  			if(dx >= minXDistForWord && dx <= maxXDistForWord && Math.abs(dy) <= 25){
+  				isPossibleStart = false;
+  				break;
+  			}
+  		}
+  		
+  		
+  		if(isPossibleStart && isLetter(out)){
+  			sortedPossibleStarts.get(heightRange).add(out);
+  		}
+    }
+    
+    private boolean isLetter(Component box){
+    	return (box.getData().getHeight() < 85) && (box.getData().getHeight() > 25) && (box.getData().getWidth() > maxXDistForWord);
+    }
+    
+    private Rectangle getWordBounds(List<Component> letters)
+    {
+    	double top = letters.get(0).getData().getY();
+    	double right = letters.get(0).getData().getX() + letters.get(0).getData().getWidth();
+    	double bottom = letters.get(0).getData().getY() + letters.get(0).getData().getHeight();
+    	double left = letters.get(0).getData().getX();
+    	
+    	for(Component c : letters){
+    		if(c.getData().getY() < top)
+    			top = c.getData().getY();
+    		
+    		if(c.getData().getX() + c.getData().getWidth() > right)
+    			right = c.getData().getX() + c.getData().getWidth();
+    		
+    		if(c.getData().getY() + c.getData().getHeight() > bottom)
+    			bottom = c.getData().getY() + c.getData().getHeight();
+    		
+    		if(c.getData().getX() < left)
+    			left = c.getData().getX();
+    	}
+
+    	return new Rectangle((int)left, (int)top, (int)(right-left), (int)(bottom-top));
+    	
+    }
+    
+    private boolean isWord(List<Component> letters)
+    {
+    	double meanTop = 0;
+    	double meanBottom = 0;
+    	double stdTop = 0;
+    	double stdBottom = 0;
+    	double maxPositionVariance = 6;
+    	int maxNumLetterPartition = 0;
+    	
+    	Map<Double, ArrayList<Component>> letterPartitions = new HashMap<Double, ArrayList<Component>>();
+    	double heightThreshold = letters.get(0).getData().getHeight() * .2;
+    
+    	if(letters.size() <= 2)
+    		return false;
+    	
+    	for(Component c : letters){
+    		meanTop += c.getData().getY();
+    		meanBottom += c.getData().getY() + c.getData().getHeight();
+    		
+    		boolean isInExistingPartition = false;
+    		for(double d : letterPartitions.keySet()){
+    			if(Math.abs(c.getData().getY() - d) < heightThreshold){
+    				letterPartitions.get(d).add(c);
+    				isInExistingPartition = true;
+    			}
+    		}
+    		
+    		if(!isInExistingPartition){
+    			letterPartitions.put(c.getData().getY(), new ArrayList<Component>());
+    		}
+    	}
+    	
+    	for(ArrayList<Component> ac : letterPartitions.values()){
+    		if(ac.size() > maxNumLetterPartition)
+    			maxNumLetterPartition = ac.size();
+    	}
+    	
+    	meanTop /= letters.size();
+    	meanBottom /= letters.size();
+    	
+    	for(Component c : letters){
+    		stdTop += Math.pow(c.getData().getY() - meanTop, 2);
+    		stdBottom += Math.pow(c.getData().getY() + c.getData().getHeight() - meanBottom, 2);
+    	}
+    	
+    	stdTop /= letters.size();
+    	stdBottom /= letters.size();
+    	
+    	return stdTop < maxPositionVariance || stdBottom < maxPositionVariance || maxNumLetterPartition > letters.size() / 2;
     }
 
 }

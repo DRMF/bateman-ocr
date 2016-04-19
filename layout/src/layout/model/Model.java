@@ -193,6 +193,8 @@ public class Model
     	
     	reader.close();
     	detectWords();
+    	detectWordLines();
+    	combineWordParagraphs();
     }
     
     public void detectWords()
@@ -281,16 +283,13 @@ public class Model
 	    		words.add(new Component(word));
 	    	}
     	}
-    	
-    	detectWordLines();
+
     }
     
     private void detectWordLines()
     {
     	lineTypes = new HashMap<int[], Map<Integer, LineTypes>>();
     	for(int[] key : partitionedPossibleStarts.keySet()){
-
-    		//List<Component> localPartitionedPossibleStarts = partitionedPossibleStarts.get(key);
     		
 			lineTypes.put(key, new HashMap<Integer, LineTypes>());
 			
@@ -384,18 +383,15 @@ public class Model
 	    		}
 	    		
 	    		if(numLikelyWords > 4 && numLikelyWords * 5 > end - start){
-	    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
 	    		} else if (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) {	    			
 	    			lineTypes.get(key).put(start, LineTypes.EMBEDDED);
 	    		} else {
-
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
 	    		}
     		}
     	}
     	
-    	combineWordParagraphs();
     }
     
     private void combineWordParagraphs()
@@ -423,7 +419,6 @@ public class Model
     			}
     		}
     	}
-
     	
     	for(int[] key : sortedLineTypeKeys){
     		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
@@ -448,71 +443,6 @@ public class Model
     		previousKey = key;
     	}
     	
-    	for(ArrayList<int[]> keys : wordParagraphs){
-    		int top = (int)getDimensions().getHeight();
-    		int bottom = 0;
-    		int left = (int)getDimensions().getWidth();
-    		int right = 0;
-    		
-    		for(int[] key : keys){
-        		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(lineTypes.get(key).keySet()); 
-        		Collections.sort(sortedLineTypeIndices);
-        		
-        		int start = sortedLineTypeIndices.get(0);
-        		int end = partitionedPossibleStarts.get(key).size() - 1;
-        		int[] wordLettersKey = null;
-        		
-        		Component first = partitionedPossibleStarts.get(key).get(start);
-        		Component last = partitionedPossibleStarts.get(key).get(end);
-        		
-    			for(int[] ai : wordLetters.keySet()){
-    				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
-    					wordLettersKey = ai;
-    					break;
-    				}
-    			}
-        		
-        		Rectangle lastWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
-        		
-        		if(first.getData().getX() < left)
-        			left = (int)first.getData().getX();
-        		if(lastWordBounds.getMaxX() > right)
-        			right = (int)lastWordBounds.getMaxX();
-        		if(key[0] < top)
-        			top = key[0];
-        		if(key[1] > bottom)
-        			bottom = key[1];
-    		}
-    		
-    		//deleteThis.add(new Component(left, top, right - left, bottom - top));
-    	}
-    	
-    	for(int[] key : mathLines){
-    		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(lineTypes.get(key).keySet()); 
-    		Collections.sort(sortedLineTypeIndices);
-    		
-    		int start = sortedLineTypeIndices.get(0);
-    		int end = partitionedPossibleStarts.get(key).size() - 1;
-    		
-    		Component first = partitionedPossibleStarts.get(key).get(start);
-    		Component last = partitionedPossibleStarts.get(key).get(end);
-    		
-    		int[] wordLettersKey = null;
-    		
-			for(int[] ai : wordLetters.keySet()){
-				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
-					wordLettersKey = ai;
-					break;
-				}
-			}
-    		
-    		Rectangle lastWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
-    		
-    		int left = (int)first.getData().getX();
-    		int right = (int)lastWordBounds.getMaxX();
-    		
-    		//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
-    	}
     }
     
     private void checkIsPossibleStart(Component out, Map<int[], ArrayList<Component>> sortedPossibleStarts, int[] heightRange)

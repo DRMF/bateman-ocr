@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,8 +32,8 @@ import layout.utils.UnsupportedImageTypeException;
  */
 public class Model
 {
-	public enum ListTypes{
-		WORD, MATH, MIX
+	public enum LineTypes{
+		WORD, MATH, EMBEDDED, UNKNOWN
 	}
 	
     private BufferedImage image = null;
@@ -46,15 +47,44 @@ public class Model
     private int maxXDistForWord = 15;
     
     private Map<int[], ArrayList<Component>> sortedWordComponents;
-    private Map<int[], ArrayList<Component>> sortedPossibleStarts;
+    private Map<int[], ArrayList<Component>> partitionedPossibleStarts;
     private Map<int[], ArrayList<Component>> wordLetters;
-    private Map<int[], ListTypes> lineTypes;
+    private Map<int[], Map<Integer, LineTypes>> lineTypes;
+    
+    private List<ArrayList<int[]>> wordParagraphs;
+    private List<int[]> mathLines;
 
     public Model()
     {
     }
     
-    public List<Component> deleteThisMethod(){
+    public List<ArrayList<int[]>> getWordParagraphs()
+    {
+    	return wordParagraphs;
+    }
+    
+    public List<int[]> getMathLines()
+    {
+    	return mathLines;
+    }
+    
+    public Map<int[], ArrayList<Component>> getWordLetters()
+    {
+    	return wordLetters;
+    }
+    
+    public Map<int[], ArrayList<Component>> getPartitionedPossibleStarts()
+    {
+    	return partitionedPossibleStarts;
+    }
+    
+    public Map<int[], Map<Integer, LineTypes>> getLineTypes()
+    {
+    	return lineTypes;
+    }
+    
+    public List<Component> deleteThisMethod()
+    {
     	return deleteThis;
     }
 
@@ -169,7 +199,7 @@ public class Model
     {
     	List<Component> listCopy = new ArrayList<Component>();
     	sortedWordComponents = new HashMap<int[], ArrayList<Component>>();
-    	sortedPossibleStarts = new HashMap<int[], ArrayList<Component>>();
+    	partitionedPossibleStarts = new HashMap<int[], ArrayList<Component>>();
     	wordLetters = new HashMap<int[], ArrayList<Component>>();
     	for(Component c : components){
     		listCopy.add(c);
@@ -193,10 +223,10 @@ public class Model
     				int[] newHeightRange = new int[] {objectY < heightRange[0] ? (int)objectY : heightRange[0], objectY + objectHeight > heightRange[1] ? (int)(objectY + objectHeight) : heightRange[1]}; 
   					sortedWordComponents.put(newHeightRange, sortedWordComponents.get(heightRange));
   					sortedWordComponents.remove(heightRange);
-  					sortedPossibleStarts.put(newHeightRange, sortedPossibleStarts.get(heightRange));
-  					sortedPossibleStarts.remove(heightRange);
+  					partitionedPossibleStarts.put(newHeightRange, partitionedPossibleStarts.get(heightRange));
+  					partitionedPossibleStarts.remove(heightRange);
   					
-  					checkIsPossibleStart(out, sortedPossibleStarts, newHeightRange);
+  					checkIsPossibleStart(out, partitionedPossibleStarts, newHeightRange);
   		    		
     				break;
     			}
@@ -206,13 +236,13 @@ public class Model
     			int[] key = new int[] {(int)objectY, (int)(objectY + objectHeight)};
     			sortedWordComponents.put(key, new ArrayList<Component>());
     			sortedWordComponents.get(key).add(out);
-    			sortedPossibleStarts.put(key, new ArrayList<Component>());
+    			partitionedPossibleStarts.put(key, new ArrayList<Component>());
         		
-    			checkIsPossibleStart(out, sortedPossibleStarts, key);
+    			checkIsPossibleStart(out, partitionedPossibleStarts, key);
     		}
     	}
     	
-    	for(ArrayList<Component> ac : sortedPossibleStarts.values()){
+    	for(ArrayList<Component> ac : partitionedPossibleStarts.values()){
 	    	for(Component c : ac){
 	    		Rectangle word = new Rectangle(c.getData());
 	    		int[] key = null;
@@ -233,12 +263,12 @@ public class Model
 	    		for(int i = 0; i < sortedWordComponents.get(key).size(); i++){
 	    			Component right = sortedWordComponents.get(key).get(i);
 	    			
-	    			double dx = right.getData().getX() - (word.getX() + word.getWidth());
+	    			double dx = right.getData().getX() - (word.getMaxX());
 	    			if(dx < maxXDistForWord && dx >= minXDistForWord){
 	    				
 	    				wordLetters.get(wordLettersKey).add(right);
 	    				
-	    				double newRight = right.getData().getX() + right.getData().getWidth(); 
+	    				double newRight = right.getData().getMaxX(); 
 	    				double newTop = word.getY() > right.getData().getY() ? right.getData().getY() : word.getY();
 	    				double newBottom = word.getY() + word.getHeight() < right.getData().getY() + right.getData().getHeight() ? right.getData().getY() + right.getData().getHeight() : word.getY() + word.getHeight();
 	    				
@@ -257,50 +287,231 @@ public class Model
     
     private void detectWordLines()
     {
-    	List<Component> wordLines = new ArrayList<Component>();
-    	for(int[] key : sortedPossibleStarts.keySet()){
-    		int right = 0;
-    		int left = (int)sortedPossibleStarts.get(key).get(0).getData().getX();
-    		int numLikelyWords = 0;
+    	lineTypes = new HashMap<int[], Map<Integer, LineTypes>>();
+    	for(int[] key : partitionedPossibleStarts.keySet()){
+
+    		//List<Component> localPartitionedPossibleStarts = partitionedPossibleStarts.get(key);
     		
-    		for(Component c : sortedPossibleStarts.get(key)){
-    			int[] wordLettersKey = null;
+			lineTypes.put(key, new HashMap<Integer, LineTypes>());
+			
+    		for(int i = 0; i < partitionedPossibleStarts.get(key).size()-1; i++){
+    			int smallestIndex = i;
+    			for(int j = i; j < partitionedPossibleStarts.get(key).size(); j++){
+    				if(partitionedPossibleStarts.get(key).get(j).getData().getX() < partitionedPossibleStarts.get(key).get(smallestIndex).getData().getX())
+    					smallestIndex = j;
+    			}
+    			
+    			if(!(smallestIndex == i)){
+    				Component temp = partitionedPossibleStarts.get(key).get(smallestIndex);
+    				partitionedPossibleStarts.get(key).set(smallestIndex, partitionedPossibleStarts.get(key).get(i));
+    				partitionedPossibleStarts.get(key).set(i, temp);
+    			}
+    		}
+    		
+    		double meanWidth = 0;
+    		for(int i = 0; i < partitionedPossibleStarts.get(key).size(); i++){
+    			meanWidth = (meanWidth * i + partitionedPossibleStarts.get(key).get(i).getData().getWidth()) / (i + 1);
+    			
+    			if(i == 0){
+    				lineTypes.get(key).put(i, LineTypes.UNKNOWN);
+    				continue;
+    			}
+    			
+    			Rectangle previousWord = null;
+    			
+    			double currentWordX = partitionedPossibleStarts.get(key).get(i).getData().getX();
     			for(int[] ai : wordLetters.keySet()){
-    				if(ai[0] == c.getData().getX() && ai[1] == c.getData().getY()){
+    				if(ai[0] == (int)partitionedPossibleStarts.get(key).get(i-1).getData().getX() && ai[1] == (int)partitionedPossibleStarts.get(key).get(i-1).getData().getY())
+    					previousWord = getWordBounds(wordLetters.get(ai));
+    			}
+    			
+    			if(currentWordX - (previousWord.getMaxX()) > meanWidth * 6){
+    				lineTypes.get(key).put(i, LineTypes.UNKNOWN);
+    			}
+    			
+    		}
+    		
+    		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(lineTypes.get(key).keySet()); 
+    		Collections.sort(sortedLineTypeIndices);
+    		
+    		
+    		for(int i = 0; i < sortedLineTypeIndices.size(); i++){
+    			int start = sortedLineTypeIndices.get(i);
+    			int end = i == sortedLineTypeIndices.size() - 1 ? partitionedPossibleStarts.get(key).size() : sortedLineTypeIndices.get(i + 1);
+    			int numLikelyWords = 0;
+    			
+        		int right = 0;
+        		int left = (int)partitionedPossibleStarts.get(key).get(start).getData().getX();
+    			
+    			for(int j = start; j < end; j++){
+		
+	    			Component c = partitionedPossibleStarts.get(key).get(j);
+	    			
+	    			int[] wordLettersKey = null;
+	    			
+	    			for(int[] ai : wordLetters.keySet()){
+	    				if(ai[0] == c.getData().getX() && ai[1] == c.getData().getY()){
+	    					wordLettersKey = ai;
+	    					break;
+	    				}
+	    			}
+	    			
+	    			Rectangle possibleWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
+	    			
+	    			if(isWord(wordLetters.get(wordLettersKey))){
+	    				boolean wordInWord = false;
+	    				for(Component compare : partitionedPossibleStarts.get(key)){
+	    					if(compare.equals(c))
+	    						continue;	
+	    					
+	    					if(possibleWordBounds.intersects(compare.getData())){
+	    						wordInWord = true;
+	    						break;
+	    					}
+	    				}
+	    				
+	    				if(!wordInWord){
+	    					deleteThis.add(c);
+	    					numLikelyWords++;
+	    				}
+	    			}
+	    			
+	    			if(possibleWordBounds != null && possibleWordBounds.getMaxX() > right)
+	    				right = (int)(possibleWordBounds.getMaxX());
+	    			
+	    			if(c.getData().getX() < left)
+	    				left = (int)c.getData().getX();
+	    		}
+	    		
+	    		if(numLikelyWords > 4 && numLikelyWords * 5 > end - start){
+	    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
+	    			lineTypes.get(key).put(start, LineTypes.WORD);
+	    		} else if (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) {	    			
+	    			lineTypes.get(key).put(start, LineTypes.EMBEDDED);
+	    		} else {
+
+	    			lineTypes.get(key).put(start, LineTypes.MATH);
+	    		}
+    		}
+    	}
+    	
+    	combineWordParagraphs();
+    }
+    
+    private void combineWordParagraphs()
+    {
+    	wordParagraphs = new ArrayList<ArrayList<int[]>>();
+    	mathLines = new ArrayList<int[]>();
+    	boolean previousIsWordLine = false;
+    	int[] previousKey = null;
+    	
+    	List<int[]> sortedLineTypeKeys = new ArrayList<int[]>();
+    	
+    	for(int[] key : lineTypes.keySet()){
+    		if(sortedLineTypeKeys.size() == 0)
+    			sortedLineTypeKeys.add(key);
+    		
+    		for(int i = 0; i < sortedLineTypeKeys.size(); i++){
+    			if(key[0] < sortedLineTypeKeys.get(i)[0]){
+    				sortedLineTypeKeys.add(i, key);
+    				break;
+    			}
+    			
+    			if(i == sortedLineTypeKeys.size() - 1){
+    				sortedLineTypeKeys.add(key);
+    				break;
+    			}
+    		}
+    	}
+
+    	
+    	for(int[] key : sortedLineTypeKeys){
+    		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
+    			if(wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 2){
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    			} else {
+    				previousIsWordLine = true;
+    				wordParagraphs.add(new ArrayList<int[]>());
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    			}
+    		} else if(lineTypes.get(key).containsValue(LineTypes.EMBEDDED)){
+    			if(previousIsWordLine && key[0] - previousKey[1] < (key[1] - key[0])) {
+    				System.out.println(key[0] - previousKey[1] + "\t" + (key[1] - key[0]));
+    				previousIsWordLine = true;
+					wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    			}
+    		} else {
+				mathLines.add(key);
+    			previousIsWordLine = false;
+    		}
+    		
+    		previousKey = key;
+    	}
+    	
+    	for(ArrayList<int[]> keys : wordParagraphs){
+    		int top = (int)getDimensions().getHeight();
+    		int bottom = 0;
+    		int left = (int)getDimensions().getWidth();
+    		int right = 0;
+    		
+    		for(int[] key : keys){
+        		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(lineTypes.get(key).keySet()); 
+        		Collections.sort(sortedLineTypeIndices);
+        		
+        		int start = sortedLineTypeIndices.get(0);
+        		int end = partitionedPossibleStarts.get(key).size() - 1;
+        		int[] wordLettersKey = null;
+        		
+        		Component first = partitionedPossibleStarts.get(key).get(start);
+        		Component last = partitionedPossibleStarts.get(key).get(end);
+        		
+    			for(int[] ai : wordLetters.keySet()){
+    				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
     					wordLettersKey = ai;
     					break;
     				}
     			}
-    			
-    			if(isWord(wordLetters.get(wordLettersKey))){
-    				boolean wordInWord = false;
-    				Rectangle possibleWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
-    				for(Component compare : sortedPossibleStarts.get(key)){
-    					if(compare.equals(c))
-    						continue;	
-    					
-    					if(possibleWordBounds.intersects(compare.getData())){
-    						wordInWord = true;
-    						break;
-    					}
-    				}
-    				
-    				if(!wordInWord){
-    					numLikelyWords++;
-    					deleteThis.add(c);
-    				}
-    			}
-    			
-    			if(c.getData().getX() + c.getData().getWidth() > right)
-    				right = (int)(c.getData().getX() + c.getData().getWidth());
-    			
-    			if(c.getData().getX() < left)
-    				left = (int)c.getData().getX();
+        		
+        		Rectangle lastWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
+        		
+        		if(first.getData().getX() < left)
+        			left = (int)first.getData().getX();
+        		if(lastWordBounds.getMaxX() > right)
+        			right = (int)lastWordBounds.getMaxX();
+        		if(key[0] < top)
+        			top = key[0];
+        		if(key[1] > bottom)
+        			bottom = key[1];
     		}
-
-    		if(numLikelyWords > 4){
-    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
-    		}
+    		
+    		//deleteThis.add(new Component(left, top, right - left, bottom - top));
+    	}
+    	
+    	for(int[] key : mathLines){
+    		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(lineTypes.get(key).keySet()); 
+    		Collections.sort(sortedLineTypeIndices);
+    		
+    		int start = sortedLineTypeIndices.get(0);
+    		int end = partitionedPossibleStarts.get(key).size() - 1;
+    		
+    		Component first = partitionedPossibleStarts.get(key).get(start);
+    		Component last = partitionedPossibleStarts.get(key).get(end);
+    		
+    		int[] wordLettersKey = null;
+    		
+			for(int[] ai : wordLetters.keySet()){
+				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
+					wordLettersKey = ai;
+					break;
+				}
+			}
+    		
+    		Rectangle lastWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
+    		
+    		int left = (int)first.getData().getX();
+    		int right = (int)lastWordBounds.getMaxX();
+    		
+    		//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
     	}
     }
     
@@ -314,7 +525,7 @@ public class Model
   			if(!isLetter(in))
   				continue;
   			
-  			double dx = out.getData().getX() - (in.getData().getX() + in.getData().getWidth());
+  			double dx = out.getData().getX() - (in.getData().getMaxX());
   			double dy = (out.getData().getY() + out.getData().getHeight()) - (in.getData().getY() + in.getData().getHeight());
   			if(dx >= minXDistForWord && dx <= maxXDistForWord && Math.abs(dy) <= 25){
   				isPossibleStart = false;
@@ -332,10 +543,10 @@ public class Model
     	return (box.getData().getHeight() < 85) && (box.getData().getHeight() > 25) && (box.getData().getWidth() > maxXDistForWord);
     }
     
-    private Rectangle getWordBounds(List<Component> letters)
+    public Rectangle getWordBounds(List<Component> letters)
     {
     	double top = letters.get(0).getData().getY();
-    	double right = letters.get(0).getData().getX() + letters.get(0).getData().getWidth();
+    	double right = letters.get(0).getData().getMaxX();
     	double bottom = letters.get(0).getData().getY() + letters.get(0).getData().getHeight();
     	double left = letters.get(0).getData().getX();
     	
@@ -343,8 +554,8 @@ public class Model
     		if(c.getData().getY() < top)
     			top = c.getData().getY();
     		
-    		if(c.getData().getX() + c.getData().getWidth() > right)
-    			right = c.getData().getX() + c.getData().getWidth();
+    		if(c.getData().getMaxX() > right)
+    			right = c.getData().getMaxX();
     		
     		if(c.getData().getY() + c.getData().getHeight() > bottom)
     			bottom = c.getData().getY() + c.getData().getHeight();

@@ -11,6 +11,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -91,7 +93,7 @@ class Canvas extends JPanel {
 			
 			List<Component> deleteThis = model.deleteThisMethod();
 			for(Component c : deleteThis){
-				g2.setColor(Color.BLUE);
+				g2.setColor(Color.MAGENTA);
 				g2.draw(c.getData());
 				g2.fillRect((int)c.getData().getX(), (int)c.getData().getY(), (int)c.getData().getWidth(), (int)c.getData().getHeight());
 			}
@@ -123,18 +125,32 @@ class Canvas extends JPanel {
 				boolean isWithinTable = (biggestBoxHeight > minTableSide && biggestBoxRight - biggestBoxLeft > minTableSide) ? (componentX > biggestBoxLeft && componentX < biggestBoxRight) : true;
 				double area = component.getData().getWidth() * component.getData().getHeight();
 
-				if(area < minArea)
+				if(area < minArea || area > maxArea)
 					g2.setColor(Color.RED);
 				else if(area < maxArea)
 					g2.setColor(Color.GREEN);
-				else
-					g2.setColor(Color.RED);
 
 				if(component.getData().getWidth() < (isWithinTable ? minInnerWidth : minOuterWidth))
 					g2.setColor(Color.RED);
 				
 				g2.draw(component.getData());
 			}
+			
+			g2.setColor(Color.ORANGE);
+			
+			for(ArrayList<int[]> aai : model.getWordParagraphs()){
+				g2.draw(drawParagraph(aai).getData());
+			}
+			
+			g2.setColor(Color.YELLOW);
+			
+			for(int[] ai : model.getMathLines()){
+				ArrayList<int[]> aai = new ArrayList<int[]>();
+				aai.add(ai);
+				g2.draw(drawParagraph(aai).getData());
+			}
+			
+			
 			g2.setColor(col);
 			
 			// In case there is some animation going on (e.g. mouse
@@ -151,6 +167,46 @@ class Canvas extends JPanel {
 				g2.setColor(col);
 			}
 		}
+	}
+	
+	private Component drawParagraph(ArrayList<int[]> keys)
+	{
+		int top = (int)model.getDimensions().getHeight();
+		int bottom = 0;
+		int left = (int)model.getDimensions().getWidth();
+		int right = 0;
+		
+		for(int[] key : keys){
+    		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(model.getLineTypes().get(key).keySet()); 
+    		Collections.sort(sortedLineTypeIndices);
+    		
+    		int start = sortedLineTypeIndices.get(0);
+    		int end = model.getPartitionedPossibleStarts().get(key).size() - 1;
+    		int[] wordLettersKey = null;
+    		
+    		Component first = model.getPartitionedPossibleStarts().get(key).get(start);
+    		Component last = model.getPartitionedPossibleStarts().get(key).get(end);
+    		
+			for(int[] ai : model.getWordLetters().keySet()){
+				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
+					wordLettersKey = ai;
+					break;
+				}
+			}
+    		
+    		Rectangle lastWordBounds = model.getWordBounds(model.getWordLetters().get(wordLettersKey));
+    		
+    		if(first.getData().getX() < left)
+    			left = (int)first.getData().getX();
+    		if(lastWordBounds.getMaxX() > right)
+    			right = (int)lastWordBounds.getMaxX();
+    		if(key[0] < top)
+    			top = key[0];
+    		if(key[1] > bottom)
+    			bottom = key[1];
+		}
+		
+		return new Component(left, top, right - left, bottom - top);
 	}
 
 	public Dimension getPreferredSize() {

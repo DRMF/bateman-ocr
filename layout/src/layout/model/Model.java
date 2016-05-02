@@ -52,7 +52,7 @@ public class Model
     private Map<int[], Map<Integer, LineTypes>> lineTypes;
     
     private List<ArrayList<int[]>> wordParagraphs;
-    private List<int[]> mathLines;
+    private List<ArrayList<int[]>> mathLines;
 
     public Model()
     {
@@ -63,7 +63,7 @@ public class Model
     	return wordParagraphs;
     }
     
-    public List<int[]> getMathLines()
+    public List<ArrayList<int[]>> getMathLines()
     {
     	return mathLines;
     }
@@ -290,7 +290,6 @@ public class Model
     {
     	lineTypes = new HashMap<int[], Map<Integer, LineTypes>>();
     	for(int[] key : partitionedPossibleStarts.keySet()){
-    		
 			lineTypes.put(key, new HashMap<Integer, LineTypes>());
 			
     		for(int i = 0; i < partitionedPossibleStarts.get(key).size()-1; i++){
@@ -382,11 +381,15 @@ public class Model
 	    				left = (int)c.getData().getX();
 	    		}
 	    		
-	    		if(numLikelyWords > 4 && numLikelyWords * 5 > end - start){
+	    		if((numLikelyWords >= 4 || numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
-	    		} else if (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) {	    			
+	    		} else if (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) {
+	    			System.out.println("This should never run");
 	    			lineTypes.get(key).put(start, LineTypes.EMBEDDED);
 	    		} else {
+	    			if(numLikelyWords >= 1){
+	    			//	deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
+	    			}
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
 	    		}
     		}
@@ -397,8 +400,9 @@ public class Model
     private void combineWordParagraphs()
     {
     	wordParagraphs = new ArrayList<ArrayList<int[]>>();
-    	mathLines = new ArrayList<int[]>();
+    	mathLines = new ArrayList<ArrayList<int[]>>();
     	boolean previousIsWordLine = false;
+    	boolean previousIsMathLine = false;
     	int[] previousKey = null;
     	
     	List<int[]> sortedLineTypeKeys = new ArrayList<int[]>();
@@ -421,8 +425,9 @@ public class Model
     	}
     	
     	for(int[] key : sortedLineTypeKeys){
+    		deleteThis.add(new Component(0, key[0] + 2, 50, key[1] - key[0] - 2));
     		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
-    			if(wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 2){
+    			if(previousIsWordLine && wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
     			} else {
     				previousIsWordLine = true;
@@ -431,13 +436,25 @@ public class Model
     			}
     		} else if(lineTypes.get(key).containsValue(LineTypes.EMBEDDED)){
     			if(previousIsWordLine && key[0] - previousKey[1] < (key[1] - key[0])) {
-    				System.out.println(key[0] - previousKey[1] + "\t" + (key[1] - key[0]));
     				previousIsWordLine = true;
 					wordParagraphs.get(wordParagraphs.size() - 1).add(key);
     			}
     		} else {
-				mathLines.add(key);
     			previousIsWordLine = false;
+    		}
+    		
+    		if(lineTypes.get(key).containsValue(LineTypes.MATH)){
+    			int primarySize = previousKey == null ? 0 : key[1] - key[0] > previousKey[1] - previousKey[0] ? key[1] - key[0] : previousKey[1] - previousKey[0];
+    			deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
+    			if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && Math.abs((key[1] - key[0]) - (previousKey[1] - previousKey[0])) > primarySize / 2){
+    				mathLines.get(mathLines.size() - 1).add(key);
+    			} else {
+    				previousIsMathLine = true;
+    				mathLines.add(new ArrayList<int[]>());
+    				mathLines.get(mathLines.size() - 1).add(key);
+    			}
+    		} else {
+    			previousIsMathLine = false;
     		}
     		
     		previousKey = key;
@@ -470,7 +487,7 @@ public class Model
     }
     
     private boolean isLetter(Component box){
-    	return (box.getData().getHeight() < 85) && (box.getData().getHeight() > 25) && (box.getData().getWidth() > maxXDistForWord);
+    	return (box.getData().getHeight() < 85) && (box.getData().getHeight() > 25) && (box.getData().getWidth() > maxXDistForWord - 2);
     }
     
     public Rectangle getWordBounds(List<Component> letters)

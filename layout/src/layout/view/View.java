@@ -1,11 +1,18 @@
 package layout.view;
 
 import java.awt.BorderLayout;
+import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -14,7 +21,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
 
 import layout.controller.Controller;
+import layout.model.Component;
 import layout.model.Model;
+import layout.model.Model.LineTypes;
 import layout.view.actions.ExitAction;
 import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
@@ -296,6 +305,36 @@ public class View extends JFrame
     		zoomPageAction.setEnabled(true);
     		
     	
+    }
+    
+    public void takeScreenShots(){
+    	Map<LineTypes, ArrayList<Component>> finalBounds = model.getFinalBounds();
+    	
+    	for(int i = 0; i < finalBounds.get(Model.LineTypes.MATH).size(); i++){
+    		Rectangle r = finalBounds.get(Model.LineTypes.MATH).get(i).getData();
+    		
+    		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+    		
+    		File file = new File("Math" + i);
+    		try {
+				ImageIO.write(portion, "jpg", file);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	
+    	for(int i = 0; i < finalBounds.get(Model.LineTypes.WORD).size(); i++){
+    		Rectangle r = finalBounds.get(Model.LineTypes.WORD).get(i).getData();
+    		
+    		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+    		
+    		File file = new File("Word" + i + ".jpg");
+    		try {
+				ImageIO.write(portion, "jpg", file);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
     public double getScale(){

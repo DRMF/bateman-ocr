@@ -1,10 +1,5 @@
 package layout.view;
 
-import layout.controller.Controller;
-import layout.model.Model;
-import layout.model.Component;
-
-import javax.swing.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -12,8 +7,13 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import javax.swing.JPanel;
+
+import layout.controller.Controller;
+import layout.model.Component;
+import layout.model.Model;
 
 /**
  * User: Alan P. Sexton Date: 20/06/13 Time: 18:00
@@ -141,22 +141,13 @@ class Canvas extends JPanel {
 			
 			g2.setColor(Color.YELLOW);
 			
-			for(ArrayList<int[]> aai : model.getMathLines())
-				for(Component c : drawLine(aai, Model.LineTypes.MATH))
-					g2.draw(c.getData());
+			for(Component c : model.getFinalBounds().get(Model.LineTypes.MATH))
+				g2.draw(c.getData());
 			
 			g2.setColor(Color.ORANGE);
 			
-			for(ArrayList<int[]> aai : model.getWordParagraphs()){
-				for(Component c : drawLine(aai, Model.LineTypes.WORD))
-					g2.draw(c.getData());
-			}
-			
-//			for(int[] ai : model.getMathLines()){
-//				ArrayList<int[]> aai = new ArrayList<int[]>();
-//				aai.add(ai);
-//				g2.draw(drawParagraph(aai).getData());
-//			}
+			for(Component c : model.getFinalBounds().get(Model.LineTypes.WORD))
+				g2.draw(c.getData());
 			
 			g2.setColor(Color.MAGENTA);
 			
@@ -180,166 +171,6 @@ class Canvas extends JPanel {
 				g2.setColor(col);
 			}
 		}
-	}
-	
-	private ArrayList<Component> drawLine(ArrayList<int[]> keys, Model.LineTypes lineType)
-	{
-		int maxHeight = 0;
-		int index = -1;
-		
-		ArrayList<Component> output = new ArrayList<Component>();
-		
-		if(lineType.equals(Model.LineTypes.MATH)){
-			for(int i = 0; i < keys.size(); i++){
-				if(keys.get(i)[1] - keys.get(i)[0] > maxHeight){
-					index = i;
-					maxHeight = keys.get(i)[1] - keys.get(i)[0];
-				}
-			}
-		} else {
-			index = 0;
-			maxHeight = keys.get(0)[1] - keys.get(0)[0];
-		}
-		
-		List<int[]> widths = new ArrayList<int[]>();
-		List<Integer> primarySortedLineTypeIndices = new ArrayList<Integer>(model.getLineTypes().get(keys.get(index)).keySet()); 
-		Collections.sort(primarySortedLineTypeIndices);
-		
-		for(int i = 0; i < primarySortedLineTypeIndices.size(); i++){
-			int start = primarySortedLineTypeIndices.get(i);
-			int end = i == primarySortedLineTypeIndices.size() - 1 ? model.getPartitionedPossibleStarts().get(keys.get(index)).size() - 1 : primarySortedLineTypeIndices.get(i + 1) - 1;
-			
-			Component startComponent = model.getPartitionedPossibleStarts().get(keys.get(index)).get(start);
-			Component endComponent = model.getPartitionedPossibleStarts().get(keys.get(index)).get(end);
-			
-			int[] wordLettersKey = null;
-			
-			for(int[] ai : model.getWordLetters().keySet()){
-				if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
-					wordLettersKey = ai;
-					break;
-				}
-			}
-			
-			int left = (int)startComponent.getData().getX();
-			int right = (int)model.getWordBounds(model.getWordLetters().get(wordLettersKey)).getMaxX();
-			int[] element = new int[] {left, right};
-			
-			widths.add(element);
-			output.add(new Component(left, keys.get(index)[0], right - left, keys.get(index)[1] - keys.get(index)[0]));
-		}
-		
-		for(int i = 0; i < keys.size(); i++){
-			
-			if(i == index)
-				continue;
-			
-			int[] key = keys.get(i);
-			
-			List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(model.getLineTypes().get(key).keySet()); 
-			Collections.sort(sortedLineTypeIndices);
-			
-			for(int j = 0; j < sortedLineTypeIndices.size(); j++){
-				if(model.getLineTypes().get(key).get(j) == null || !model.getLineTypes().get(key).get(j).equals(lineType))
-					continue;
-				
-				int start = sortedLineTypeIndices.get(j);
-				int end = j == sortedLineTypeIndices.size() - 1 ? model.getPartitionedPossibleStarts().get(key).size() - 1 : sortedLineTypeIndices.get(j + 1);
-				
-				Component startComponent = model.getPartitionedPossibleStarts().get(key).get(start);
-				Component endComponent = model.getPartitionedPossibleStarts().get(key).get(end);
-				
-				int[] wordLettersKey = null;
-				
-				for(int[] ai : model.getWordLetters().keySet()){
-					if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
-						wordLettersKey = ai;
-						break;
-					}
-				}
-				
-				int left = (int)startComponent.getData().getX();
-				int right = (int)model.getWordBounds(model.getWordLetters().get(wordLettersKey)).getMaxX();
-				
-				int outputIndex = -1;
-				
-				for(int k = 0; k < widths.size(); k++){
-					if(widths.get(k)[0] < left && widths.get(k)[1] > left || widths.get(k)[0] < right && widths.get(k)[1] > right){
-						outputIndex = k;
-						break;
-					}
-				}
-				
-				if(outputIndex != -1){
-					Component primary = output.get(outputIndex);
-					
-					int outputLeft = (int)primary.getData().getX();
-					int outputRight = (int)primary.getData().getMaxX();
-					int outputTop = (int)primary.getData().getY();
-					int outputBottom = (int)primary.getData().getMaxY();
-					
-		    		if(left < outputLeft)
-		    			outputLeft = left;
-		    		if(right > outputRight)
-		    			outputRight = right;
-		    		if(key[0] < outputTop)
-		    			outputTop = key[0];
-		    		if(key[1] > outputBottom)
-		    			outputBottom = key[1];
-		    		
-		    		output.set(outputIndex, new Component(outputLeft, outputTop, outputRight - outputLeft, outputBottom - outputTop));
-				}
-			}
-		}
-		
-		if(output.size() > 1){
-			//System.out.println(output.get(0).getData().getX() + "\t" + output.get(1).getData().getX());
-			//deleteThis.add(output.get(0));
-			
-			//deleteThis.add(output.get(1));
-		}
-		
-		return output;
-	}
-	
-	private Component drawParagraph(ArrayList<int[]> keys)
-	{
-		int top = (int)model.getDimensions().getHeight();
-		int bottom = 0;
-		int left = (int)model.getDimensions().getWidth();
-		int right = 0;
-		
-		for(int[] key : keys){
-    		List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(model.getLineTypes().get(key).keySet()); 
-    		Collections.sort(sortedLineTypeIndices);
-    		
-    		int start = sortedLineTypeIndices.get(0);
-    		int end = model.getPartitionedPossibleStarts().get(key).size() - 1;
-    		int[] wordLettersKey = null;
-    		
-    		Component first = model.getPartitionedPossibleStarts().get(key).get(start);
-    		Component last = model.getPartitionedPossibleStarts().get(key).get(end);
-    		
-			for(int[] ai : model.getWordLetters().keySet()){
-				if(ai[0] == last.getData().getX() && ai[1] == last.getData().getY()){
-					wordLettersKey = ai;
-					break;
-				}
-			}
-    		
-    		Rectangle lastWordBounds = model.getWordBounds(model.getWordLetters().get(wordLettersKey));
-    		
-    		if(first.getData().getX() < left)
-    			left = (int)first.getData().getX();
-    		if(lastWordBounds.getMaxX() > right)
-    			right = (int)lastWordBounds.getMaxX();
-    		if(key[0] < top)
-    			top = key[0];
-    		if(key[1] > bottom)
-    			bottom = key[1];
-		}
-		
-		return new Component(left, top, right - left, bottom - top);
 	}
 
 	public Dimension getPreferredSize() {

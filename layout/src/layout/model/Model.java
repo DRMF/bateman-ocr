@@ -33,7 +33,7 @@ import layout.utils.UnsupportedImageTypeException;
 public class Model
 {
 	public enum LineTypes{
-		WORD, MATH, EMBEDDED, UNKNOWN
+		WORD, MATH
 	}
 	
     private BufferedImage image = null;
@@ -53,9 +53,16 @@ public class Model
     
     private List<ArrayList<int[]>> wordParagraphs;
     private List<ArrayList<int[]>> mathLines;
+    
+    private Map<LineTypes, ArrayList<Component>> finalBounds;
 
     public Model()
     {
+    }
+    
+    public Map<LineTypes, ArrayList<Component>> getFinalBounds()
+    {
+    	return finalBounds;
     }
     
     public List<ArrayList<int[]>> getWordParagraphs()
@@ -191,10 +198,20 @@ public class Model
     		components.add(new Component(x, y, w, h));
     	}
     	
+    	finalBounds = new HashMap<LineTypes, ArrayList<Component>>();
+    	
     	reader.close();
     	detectWords();
     	detectWordLines();
     	combineWordParagraphs();
+    	
+    	finalBounds.put(LineTypes.MATH, new ArrayList<Component>());
+		for(ArrayList<int[]> aai : getMathLines())
+			finalBounds.get(LineTypes.MATH).addAll(findFinalBoundsOfType(aai, LineTypes.MATH));
+
+		finalBounds.put(LineTypes.WORD, new ArrayList<Component>());
+		for(ArrayList<int[]> aai : getWordParagraphs())
+			finalBounds.get(LineTypes.WORD).addAll(findFinalBoundsOfType(aai, LineTypes.WORD));
     }
     
     public void detectWords()
@@ -311,7 +328,7 @@ public class Model
     			meanWidth = (meanWidth * i + partitionedPossibleStarts.get(key).get(i).getData().getWidth()) / (i + 1);
     			
     			if(i == 0){
-    				lineTypes.get(key).put(i, LineTypes.UNKNOWN);
+    				lineTypes.get(key).put(i, null);
     				continue;
     			}
     			
@@ -324,7 +341,7 @@ public class Model
     			}
     			
     			if(currentWordX - (previousWord.getMaxX()) > meanWidth * 6){
-    				lineTypes.get(key).put(i, LineTypes.UNKNOWN);
+    				lineTypes.get(key).put(i, null);
     			}
     			
     		}
@@ -382,14 +399,9 @@ public class Model
 	    		}
 	    		
 	    		if((numLikelyWords >= 4 || numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
+	    			deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
-	    		} else if (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) {
-	    			System.out.println("This should never run");
-	    			lineTypes.get(key).put(start, LineTypes.EMBEDDED);
 	    		} else {
-	    			if(numLikelyWords >= 1){
-	    			//	deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
-	    			}
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
 	    		}
     		}
@@ -434,11 +446,6 @@ public class Model
     				wordParagraphs.add(new ArrayList<int[]>());
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
     			}
-    		} else if(lineTypes.get(key).containsValue(LineTypes.EMBEDDED)){
-    			if(previousIsWordLine && key[0] - previousKey[1] < (key[1] - key[0])) {
-    				previousIsWordLine = true;
-					wordParagraphs.get(wordParagraphs.size() - 1).add(key);
-    			}
     		} else {
     			previousIsWordLine = false;
     		}
@@ -461,6 +468,122 @@ public class Model
     	}
     	
     }
+    
+	private ArrayList<Component> findFinalBoundsOfType(ArrayList<int[]> keys, LineTypes lineType)
+	{
+		int maxHeight = 0;
+		int index = -1;
+		
+		ArrayList<Component> output = new ArrayList<Component>();
+		
+		if(lineType.equals(LineTypes.MATH)){
+			for(int i = 0; i < keys.size(); i++){
+				if(keys.get(i)[1] - keys.get(i)[0] > maxHeight){
+					index = i;
+					maxHeight = keys.get(i)[1] - keys.get(i)[0];
+				}
+			}
+		} else {
+			index = 0;
+			maxHeight = keys.get(0)[1] - keys.get(0)[0];
+		}
+		
+		List<int[]> widths = new ArrayList<int[]>();
+		List<Integer> primarySortedLineTypeIndices = new ArrayList<Integer>(getLineTypes().get(keys.get(index)).keySet()); 
+		Collections.sort(primarySortedLineTypeIndices);
+		
+		for(int i = 0; i < primarySortedLineTypeIndices.size(); i++){
+			if(getLineTypes().get(keys.get(index)).get(i) == null || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
+				continue;
+			
+			int start = primarySortedLineTypeIndices.get(i);
+			int end = i == primarySortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(keys.get(index)).size() - 1 : primarySortedLineTypeIndices.get(i + 1) - 1;
+			
+			Component startComponent = getPartitionedPossibleStarts().get(keys.get(index)).get(start);
+			Component endComponent = getPartitionedPossibleStarts().get(keys.get(index)).get(end);
+			
+			int[] wordLettersKey = null;
+			
+			for(int[] ai : getWordLetters().keySet()){
+				if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
+					wordLettersKey = ai;
+					break;
+				}
+			}
+			
+			int left = (int)startComponent.getData().getX();
+			int right = (int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX();
+			int[] element = new int[] {left, right};
+			
+			widths.add(element);
+			output.add(new Component(left, keys.get(index)[0], right - left, keys.get(index)[1] - keys.get(index)[0]));
+		}
+		
+		for(int i = 0; i < keys.size(); i++){
+			
+			if(i == index)
+				continue;
+			
+			int[] key = keys.get(i);
+			
+			List<Integer> sortedLineTypeIndices = new ArrayList<Integer>(getLineTypes().get(key).keySet()); 
+			Collections.sort(sortedLineTypeIndices);
+			
+			for(int j = 0; j < sortedLineTypeIndices.size(); j++){
+				if(getLineTypes().get(key).get(j) == null || !getLineTypes().get(key).get(j).equals(lineType))
+					continue;
+				
+				int start = sortedLineTypeIndices.get(j);
+				int end = j == sortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(key).size() - 1 : sortedLineTypeIndices.get(j + 1);
+				
+				Component startComponent = getPartitionedPossibleStarts().get(key).get(start);
+				Component endComponent = getPartitionedPossibleStarts().get(key).get(end);
+				
+				int[] wordLettersKey = null;
+				
+				for(int[] ai : getWordLetters().keySet()){
+					if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
+						wordLettersKey = ai;
+						break;
+					}
+				}
+				
+				int left = (int)startComponent.getData().getX();
+				int right = (int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX();
+				
+				int outputIndex = -1;
+				
+				for(int k = 0; k < widths.size(); k++){
+					if(widths.get(k)[0] < left && widths.get(k)[1] > left || widths.get(k)[0] < right && widths.get(k)[1] > right){
+						outputIndex = k;
+						break;
+					}
+				}
+				
+				if(outputIndex != -1){
+					Component primary = output.get(outputIndex);
+					
+					int outputLeft = (int)primary.getData().getX();
+					int outputRight = (int)primary.getData().getMaxX();
+					int outputTop = (int)primary.getData().getY();
+					int outputBottom = (int)primary.getData().getMaxY();
+					
+		    		if(left < outputLeft)
+		    			outputLeft = left;
+		    		if(right > outputRight)
+		    			outputRight = right;
+		    		if(key[0] < outputTop)
+		    			outputTop = key[0];
+		    		if(key[1] > outputBottom)
+		    			outputBottom = key[1];
+		    		
+		    		output.set(outputIndex, new Component(outputLeft, outputTop, outputRight - outputLeft, outputBottom - outputTop));
+				}
+			}
+		}
+		
+		return output;
+	}
     
     private void checkIsPossibleStart(Component out, Map<int[], ArrayList<Component>> sortedPossibleStarts, int[] heightRange)
     {

@@ -227,8 +227,9 @@ public class Model
     	for(int i = 0; i < listCopy.size(); i++){
     		Component out = listCopy.get(i);
     		
-    		if(!isLetter(out))
+    		if(!isLetter(out)){
     			continue;
+    		}
     		
     		boolean dictionaryHasHeight = false;
 			double objectY = out.getData().getY();
@@ -386,9 +387,10 @@ public class Model
 	    				}
 	    				
 	    				if(!wordInWord){
-	    					deleteThis.add(c);
+	    					//deleteThis.add(c);
 	    					numLikelyWords++;
-	    				}
+	    				}else
+	    					numLikelyWords++;
 	    			}
 	    			
 	    			if(possibleWordBounds != null && possibleWordBounds.getMaxX() > right)
@@ -398,10 +400,11 @@ public class Model
 	    				left = (int)c.getData().getX();
 	    		}
 	    		
-	    		if((numLikelyWords >= 4 || numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
-	    			deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
+	    		if((numLikelyWords >= 4 && numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
+	    			//deleteThis.add(new Component(left, key[0] + 5, right - left, key[1] - key[0] - 5));
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
 	    		} else {
+	    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
 	    		}
     		}
@@ -436,24 +439,18 @@ public class Model
     		}
     	}
     	
-    	for(int[] key : sortedLineTypeKeys){
-    		deleteThis.add(new Component(0, key[0] + 2, 50, key[1] - key[0] - 2));
-    		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
-    			if(previousIsWordLine && wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
-    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
-    			} else {
-    				previousIsWordLine = true;
-    				wordParagraphs.add(new ArrayList<int[]>());
-    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
-    			}
-    		} else {
-    			previousIsWordLine = false;
-    		}
+    	for(int i = 0; i < sortedLineTypeKeys.size(); i++){
+    		
+    		int[] key = sortedLineTypeKeys.get(i);
     		
     		if(lineTypes.get(key).containsValue(LineTypes.MATH)){
     			int primarySize = previousKey == null ? 0 : key[1] - key[0] > previousKey[1] - previousKey[0] ? key[1] - key[0] : previousKey[1] - previousKey[0];
     			deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
-    			if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && Math.abs((key[1] - key[0]) - (previousKey[1] - previousKey[0])) > primarySize / 2){
+    			getWordBounds(sortedWordComponents.get(key));
+    			if(previousIsWordLine && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && Math.abs((key[1] - key[0]) - (previousKey[1] - previousKey[0])) > primarySize / 2){
     				mathLines.get(mathLines.size() - 1).add(key);
     			} else {
     				previousIsMathLine = true;
@@ -462,6 +459,20 @@ public class Model
     			}
     		} else {
     			previousIsMathLine = false;
+    		}
+    		
+    		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
+    			//deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    			if(previousIsWordLine && wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
+    				deleteThis.add(new Component(50, key[0], 100, key[1] - key[0]));
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    			} else {
+    				previousIsWordLine = true;
+    				wordParagraphs.add(new ArrayList<int[]>());
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    			}
+    		} else {
+    			previousIsWordLine = false;
     		}
     		
     		previousKey = key;
@@ -610,7 +621,7 @@ public class Model
     }
     
     private boolean isLetter(Component box){
-    	return (box.getData().getHeight() < 85) && (box.getData().getHeight() > 25) && (box.getData().getWidth() > maxXDistForWord - 2);
+    	return ((box.getData().getWidth() / box.getData().getHeight() > .2) & (box.getData().getWidth() < 500)  || (box.getData().getHeight() < 85) && (box.getData().getHeight() > 15)) && (box.getData().getWidth() > maxXDistForWord - 2);
     }
     
     public Rectangle getWordBounds(List<Component> letters)

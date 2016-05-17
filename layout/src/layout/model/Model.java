@@ -401,10 +401,8 @@ public class Model
 	    		}
 	    		
 	    		if((numLikelyWords >= 4 && numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
-	    			//deleteThis.add(new Component(left, key[0] + 5, right - left, key[1] - key[0] - 5));
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
 	    		} else {
-	    			//deleteThis.add(new Component(left, key[0], right - left, key[1] - key[0]));
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
 	    		}
     		}
@@ -447,18 +445,18 @@ public class Model
     			int primarySize = previousKey == null ? 0 : key[1] - key[0] > previousKey[1] - previousKey[0] ? key[1] - key[0] : previousKey[1] - previousKey[0];
     			deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
     			getWordBounds(sortedWordComponents.get(key));
-    			if(previousIsWordLine && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
+    			if(previousIsWordLine && key[0] - previousKey[1] < (previousKey[1] - previousKey[0]) / 5){
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
     				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    				previousIsMathLine = false;
     			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && Math.abs((key[1] - key[0]) - (previousKey[1] - previousKey[0])) > primarySize / 2){
     				mathLines.get(mathLines.size() - 1).add(key);
     			} else {
-    				previousIsMathLine = true;
     				mathLines.add(new ArrayList<int[]>());
     				mathLines.get(mathLines.size() - 1).add(key);
+    				previousIsWordLine = false;
+    				previousIsMathLine = true;
     			}
-    		} else {
-    			previousIsMathLine = false;
     		}
     		
     		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
@@ -466,13 +464,13 @@ public class Model
     			if(previousIsWordLine && wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
     				deleteThis.add(new Component(50, key[0], 100, key[1] - key[0]));
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    				previousIsMathLine = false;
     			} else {
-    				previousIsWordLine = true;
     				wordParagraphs.add(new ArrayList<int[]>());
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    				previousIsWordLine = true;
+    				previousIsMathLine = false;
     			}
-    		} else {
-    			previousIsWordLine = false;
     		}
     		
     		previousKey = key;
@@ -504,7 +502,7 @@ public class Model
 		Collections.sort(primarySortedLineTypeIndices);
 		
 		for(int i = 0; i < primarySortedLineTypeIndices.size(); i++){
-			if(getLineTypes().get(keys.get(index)).get(i) == null || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
+			if(getLineTypes().get(keys.get(index)).get(i) == null)// || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
 				continue;
 			
 			int start = primarySortedLineTypeIndices.get(i);
@@ -541,7 +539,7 @@ public class Model
 			Collections.sort(sortedLineTypeIndices);
 			
 			for(int j = 0; j < sortedLineTypeIndices.size(); j++){
-				if(getLineTypes().get(key).get(j) == null || !getLineTypes().get(key).get(j).equals(lineType))
+				if(getLineTypes().get(key).get(j) == null)// || !getLineTypes().get(key).get(j).equals(lineType))
 					continue;
 				
 				int start = sortedLineTypeIndices.get(j);
@@ -562,17 +560,8 @@ public class Model
 				int left = (int)startComponent.getData().getX();
 				int right = (int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX();
 				
-				int outputIndex = -1;
-				
 				for(int k = 0; k < widths.size(); k++){
-					if(widths.get(k)[0] < left && widths.get(k)[1] > left || widths.get(k)[0] < right && widths.get(k)[1] > right){
-						outputIndex = k;
-						break;
-					}
-				}
-				
-				if(outputIndex != -1){
-					Component primary = output.get(outputIndex);
+					Component primary = output.get(k);
 					
 					int outputLeft = (int)primary.getData().getX();
 					int outputRight = (int)primary.getData().getMaxX();
@@ -588,7 +577,7 @@ public class Model
 		    		if(key[1] > outputBottom)
 		    			outputBottom = key[1];
 		    		
-		    		output.set(outputIndex, new Component(outputLeft, outputTop, outputRight - outputLeft, outputBottom - outputTop));
+		    		output.set(k, new Component(outputLeft, outputTop, outputRight - outputLeft, outputBottom - outputTop));
 				}
 			}
 		}

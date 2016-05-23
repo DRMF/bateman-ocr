@@ -27,6 +27,7 @@ import layout.model.Model.LineTypes;
 import layout.view.actions.ExitAction;
 import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
+import layout.view.actions.ScreenshotAction;
 import layout.view.actions.ToggleBoxAction;
 import layout.view.actions.ToggleImageAction;
 import layout.view.actions.ZoomInAction;
@@ -61,6 +62,7 @@ public class View extends JFrame
     private AbstractAction zoomResetAction;
     private AbstractAction zoomWidthAction;
     private AbstractAction zoomPageAction;
+    private AbstractAction screenshotAction;
     
     private double scaleFactor;
     
@@ -112,6 +114,8 @@ public class View extends JFrame
         zoomWidthAction.setEnabled(false);
         zoomPageAction = new ZoomPageAction(model, this, controller);
         zoomPageAction.setEnabled(false);
+        screenshotAction = new ScreenshotAction(model, this, controller);
+        screenshotAction.setEnabled(false);
         
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -175,6 +179,8 @@ public class View extends JFrame
         fileMenu.add(zoomWidthAction);
         fileMenu.add(zoomPageAction);
         fileMenu.addSeparator();
+        fileMenu.add(screenshotAction);
+        fileMenu.addSeparator();
         fileMenu.add(exitAction);
 
         JMenuBar menuBar;
@@ -201,6 +207,8 @@ public class View extends JFrame
         toolBar.add(zoomResetAction);
         toolBar.add(zoomWidthAction);
         toolBar.add(zoomPageAction);
+        toolBar.addSeparator();
+        toolBar.add(screenshotAction);
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -217,6 +225,7 @@ public class View extends JFrame
     	zoomResetAction.setEnabled(true);
     	zoomWidthAction.setEnabled(true);
     	zoomPageAction.setEnabled(true);
+    	screenshotAction.setEnabled(true);
     	
     	double canvasScrollPaneWidth = (double)canvasScrollPane.getViewport().getSize().width;
     	double canvasScrollPaneHeight= (double)canvasScrollPane.getViewport().getSize().height;
@@ -307,7 +316,7 @@ public class View extends JFrame
     	
     }
     
-    public void takeScreenShots(){
+    public void takeScreenshots(String directory){
     	Map<LineTypes, ArrayList<Component>> finalBounds = model.getFinalBounds();
     	
     	for(int i = 0; i < finalBounds.get(Model.LineTypes.MATH).size(); i++){
@@ -315,7 +324,7 @@ public class View extends JFrame
     		
     		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
     		
-    		File file = new File("Math" + i);
+    		File file = new File(directory + "/Math" + i + ".jpg");
     		try {
 				ImageIO.write(portion, "jpg", file);
 			} catch (IOException e) {
@@ -328,7 +337,7 @@ public class View extends JFrame
     		
     		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
     		
-    		File file = new File("Word" + i + ".jpg");
+    		File file = new File(directory + "/Word" + i + ".jpg");
     		try {
 				ImageIO.write(portion, "jpg", file);
 			} catch (IOException e) {

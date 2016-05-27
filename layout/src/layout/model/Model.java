@@ -33,7 +33,7 @@ import layout.utils.UnsupportedImageTypeException;
 public class Model
 {
 	public enum LineTypes{
-		WORD, MATH
+		WORD, MATH, NONE
 	}
 	
     private BufferedImage image = null;
@@ -355,6 +355,7 @@ public class Model
     			int start = sortedLineTypeIndices.get(i);
     			int end = i == sortedLineTypeIndices.size() - 1 ? partitionedPossibleStarts.get(key).size() : sortedLineTypeIndices.get(i + 1);
     			int numLikelyWords = 0;
+    			int numDenseWords = 0;
     			
         		int right = 0;
         		int left = (int)partitionedPossibleStarts.get(key).get(start).getData().getX();
@@ -374,24 +375,11 @@ public class Model
 	    			
 	    			Rectangle possibleWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
 	    			
-	    			if(isWord(wordLetters.get(wordLettersKey))){
-	    				boolean wordInWord = false;
-	    				for(Component compare : partitionedPossibleStarts.get(key)){
-	    					if(compare.equals(c))
-	    						continue;	
-	    					
-	    					if(possibleWordBounds.intersects(compare.getData())){
-	    						wordInWord = true;
-	    						break;
-	    					}
-	    				}
-	    				
-	    				if(!wordInWord){
-	    					//deleteThis.add(c);
-	    					numLikelyWords++;
-	    				}else
-	    					numLikelyWords++;
-	    			}
+	    			if(isWord(wordLetters.get(wordLettersKey)))
+	    				numLikelyWords++;
+	    			
+	    			if(wordLetters.get(wordLettersKey).size() > 5)
+	    				numDenseWords++;
 	    			
 	    			if(possibleWordBounds != null && possibleWordBounds.getMaxX() > right)
 	    				right = (int)(possibleWordBounds.getMaxX());
@@ -400,10 +388,12 @@ public class Model
 	    				left = (int)c.getData().getX();
 	    		}
 	    		
-	    		if((numLikelyWords >= 4 && numLikelyWords * 2 > end - start) || numLikelyWords >= 1 && numLikelyWords * 5 > end - start){
+	    		if((numLikelyWords >= 4 && numLikelyWords * 2 > end - start) || (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) || (numDenseWords >= 2)){
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
+	    			//deleteThis.add(new Component(left, key[0], right-left, key[1] - key[0]));
 	    		} else {
 	    			lineTypes.get(key).put(start, LineTypes.MATH);
+	    			//deleteThis.add(new Component(left, key[0], right-left, key[1] - key[0]));
 	    		}
     		}
     	}
@@ -440,29 +430,10 @@ public class Model
     	for(int i = 0; i < sortedLineTypeKeys.size(); i++){
     		
     		int[] key = sortedLineTypeKeys.get(i);
-    		
-    		if(lineTypes.get(key).containsValue(LineTypes.MATH)){
-    			int primarySize = previousKey == null ? 0 : key[1] - key[0] > previousKey[1] - previousKey[0] ? key[1] - key[0] : previousKey[1] - previousKey[0];
-    			deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
-    			getWordBounds(sortedWordComponents.get(key));
-    			if(previousIsWordLine && key[0] - previousKey[1] < (previousKey[1] - previousKey[0]) / 5){
-    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
-    				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
-    				previousIsMathLine = false;
-    			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && Math.abs((key[1] - key[0]) - (previousKey[1] - previousKey[0])) > primarySize / 2){
-    				mathLines.get(mathLines.size() - 1).add(key);
-    			} else {
-    				mathLines.add(new ArrayList<int[]>());
-    				mathLines.get(mathLines.size() - 1).add(key);
-    				previousIsWordLine = false;
-    				previousIsMathLine = true;
-    			}
-    		}
-    		
     		if(lineTypes.get(key).containsValue(LineTypes.WORD)){
     			//deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
     			if(previousIsWordLine && wordParagraphs.size() > 0 && key[0] - previousKey[1] < (key[1] - key[0]) / 3){
-    				deleteThis.add(new Component(50, key[0], 100, key[1] - key[0]));
+    				//deleteThis.add(new Component(50, key[0], 100, key[1] - key[0]));
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
     				previousIsMathLine = false;
     			} else {
@@ -471,9 +442,46 @@ public class Model
     				previousIsWordLine = true;
     				previousIsMathLine = false;
     			}
+    			previousKey = key;
     		}
     		
-    		previousKey = key;
+    		if(lineTypes.get(key).containsValue(LineTypes.MATH)){
+    			int primarySize = 0;
+    			float ratio = 0;
+    			if(previousKey != null){
+    				if(key[1] - key[0] > previousKey[1] - previousKey[0]){
+    					primarySize = key[1] - key[0];
+    					ratio = (float)(previousKey[1] - previousKey[0]) / primarySize;
+    				} else {
+    					primarySize = previousKey[1] - previousKey[0];
+    					ratio = (float)(key[1] - key[0]) / primarySize;    					
+    				}
+    				System.out.println(ratio + "\t" + (key[1] - key[0]) + "\t" + (previousKey[1] - previousKey[0]));
+    			}
+    			//System.out.println("Previous Key: " + (previousKey != null) + "\tRatio: " + ratio);
+    			//deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
+    			getWordBounds(sortedWordComponents.get(key));
+    			if(previousIsWordLine && key[0] - previousKey[1] < (previousKey[1] - previousKey[0]) / 7){
+    				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
+    				//deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    				previousIsMathLine = false;
+    				previousKey[1] = key[1];
+    				previousKey[0] = previousKey[1] - (key[1] - key[0]);
+    			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && ratio < .18){
+    				mathLines.get(mathLines.size() - 1).add(key);
+    				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    				previousKey[1] = key[1];
+    				System.out.println(ratio);
+    			} else {
+    				mathLines.add(new ArrayList<int[]>());
+    				mathLines.get(mathLines.size() - 1).add(key);
+    				previousIsWordLine = false;
+    				previousIsMathLine = true;
+    				previousKey = key;
+    				//deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    			}
+    		}
+    		
     	}
     	
     }
@@ -502,7 +510,7 @@ public class Model
 		Collections.sort(primarySortedLineTypeIndices);
 		
 		for(int i = 0; i < primarySortedLineTypeIndices.size(); i++){
-			if(getLineTypes().get(keys.get(index)).get(i) == null)// || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
+			if(getLineTypes().get(keys.get(index)).get(i) == null || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
 				continue;
 			
 			int start = primarySortedLineTypeIndices.get(i);
@@ -539,11 +547,11 @@ public class Model
 			Collections.sort(sortedLineTypeIndices);
 			
 			for(int j = 0; j < sortedLineTypeIndices.size(); j++){
-				if(getLineTypes().get(key).get(j) == null)// || !getLineTypes().get(key).get(j).equals(lineType))
+				if(getLineTypes().get(key).get(j) == null || !getLineTypes().get(key).get(j).equals(lineType))
 					continue;
 				
 				int start = sortedLineTypeIndices.get(j);
-				int end = j == sortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(key).size() - 1 : sortedLineTypeIndices.get(j + 1);
+				int end = j == sortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(key).size() - 1 : sortedLineTypeIndices.get(j + 1) - 1;
 				
 				Component startComponent = getPartitionedPossibleStarts().get(key).get(start);
 				Component endComponent = getPartitionedPossibleStarts().get(key).get(end);

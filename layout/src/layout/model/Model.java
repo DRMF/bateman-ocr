@@ -46,6 +46,8 @@ public class Model
     private int minXDistForWord = -2;
     private int maxXDistForWord = 15;
     
+    private List<Component> nonWords;
+    
     private Map<int[], ArrayList<Component>> sortedWordComponents;
     private Map<int[], ArrayList<Component>> partitionedPossibleStarts;
     private Map<int[], ArrayList<Component>> wordLetters;
@@ -201,6 +203,7 @@ public class Model
     	finalBounds = new HashMap<LineTypes, ArrayList<Component>>();
     	
     	reader.close();
+    	detectNonWords();
     	detectWords();
     	detectWordLines();
     	combineWordParagraphs();
@@ -212,6 +215,25 @@ public class Model
 		finalBounds.put(LineTypes.WORD, new ArrayList<Component>());
 		for(ArrayList<int[]> aai : getWordParagraphs())
 			finalBounds.get(LineTypes.WORD).addAll(findFinalBoundsOfType(aai, LineTypes.WORD));
+    }
+    
+    public void detectNonWords()
+    {
+    	nonWords = new ArrayList<Component>();
+    	
+    	for(Component c : components)
+    		if(!isLetter(c))
+    			nonWords.add(c);
+    }
+    
+    public boolean intersectsNonWord(Component inp)
+    {
+    	for(Component c : nonWords)
+    		if(c.getData().intersects(inp.getData()))
+    			return true;
+    	
+    	return false;
+    		
     }
     
     public void detectWords()
@@ -227,9 +249,9 @@ public class Model
     	for(int i = 0; i < listCopy.size(); i++){
     		Component out = listCopy.get(i);
     		
-    		if(!isLetter(out)){
+    		if(nonWords.contains(out) || intersectsNonWord(out))
     			continue;
-    		}
+
     		
     		boolean dictionaryHasHeight = false;
 			double objectY = out.getData().getY();
@@ -356,6 +378,7 @@ public class Model
     			int end = i == sortedLineTypeIndices.size() - 1 ? partitionedPossibleStarts.get(key).size() : sortedLineTypeIndices.get(i + 1);
     			int numLikelyWords = 0;
     			int numDenseWords = 0;
+    			int numSingleWords = 0;
     			
         		int right = 0;
         		int left = (int)partitionedPossibleStarts.get(key).get(start).getData().getX();
@@ -375,11 +398,16 @@ public class Model
 	    			
 	    			Rectangle possibleWordBounds = getWordBounds(wordLetters.get(wordLettersKey));
 	    			
-	    			if(isWord(wordLetters.get(wordLettersKey)))
+	    			if(isWord(wordLetters.get(wordLettersKey))){
 	    				numLikelyWords++;
+	    				deleteThis.add(new Component((int)c.getData().getX(), (int)c.getData().getY(), (int)c.getData().getWidth(), (int)c.getData().getHeight()));
+	    			}
 	    			
 	    			if(wordLetters.get(wordLettersKey).size() > 5)
 	    				numDenseWords++;
+	    			
+	    			if(wordLetters.get(wordLettersKey).size() <= 2)
+	    				numSingleWords++;
 	    			
 	    			if(possibleWordBounds != null && possibleWordBounds.getMaxX() > right)
 	    				right = (int)(possibleWordBounds.getMaxX());
@@ -388,7 +416,7 @@ public class Model
 	    				left = (int)c.getData().getX();
 	    		}
 	    		
-	    		if((numLikelyWords >= 4 && numLikelyWords * 2 > end - start) || (numLikelyWords >= 1 && numLikelyWords * 5 > end - start) || (numDenseWords >= 2)){
+	    		if(((numLikelyWords >= 4 && numLikelyWords * 2 > end - start - numSingleWords) || (numLikelyWords >= 1 && numLikelyWords * 1.5 >= end - start - numSingleWords) || numDenseWords >= 2)){
 	    			lineTypes.get(key).put(start, LineTypes.WORD);
 	    			//deleteThis.add(new Component(left, key[0], right-left, key[1] - key[0]));
 	    		} else {
@@ -456,22 +484,21 @@ public class Model
     					primarySize = previousKey[1] - previousKey[0];
     					ratio = (float)(key[1] - key[0]) / primarySize;    					
     				}
-    				System.out.println(ratio + "\t" + (key[1] - key[0]) + "\t" + (previousKey[1] - previousKey[0]));
     			}
     			//System.out.println("Previous Key: " + (previousKey != null) + "\tRatio: " + ratio);
-    			//deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
-    			getWordBounds(sortedWordComponents.get(key));
-    			if(previousIsWordLine && key[0] - previousKey[1] < (previousKey[1] - previousKey[0]) / 7){
+    			deleteThis.add(new Component(30, key[0], 50, key[1] - key[0]));
+    			if(previousIsWordLine && key[0] - previousKey[1] < (previousKey[1] - previousKey[0]) / 7 && (float)(previousKey[1] - previousKey[0]) / (key[1] - key[0]) > .5){
+    				System.out.println((previousKey[1] - previousKey[0]) + "\t" + (key[1] - key[0]));
     				wordParagraphs.get(wordParagraphs.size() - 1).add(key);
-    				//deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
+    				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
     				previousIsMathLine = false;
     				previousKey[1] = key[1];
     				previousKey[0] = previousKey[1] - (key[1] - key[0]);
-    			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && ratio < .18){
+    			} else if(previousIsMathLine && key[0] - previousKey[1] < primarySize / 7 && ratio < .5){
+    				System.out.println(ratio);
     				mathLines.get(mathLines.size() - 1).add(key);
     				deleteThis.add(new Component(100, key[0], 100, key[1] - key[0]));
     				previousKey[1] = key[1];
-    				System.out.println(ratio);
     			} else {
     				mathLines.add(new ArrayList<int[]>());
     				mathLines.get(mathLines.size() - 1).add(key);
@@ -618,7 +645,7 @@ public class Model
     }
     
     private boolean isLetter(Component box){
-    	return ((box.getData().getWidth() / box.getData().getHeight() > .2) & (box.getData().getWidth() < 500)  || (box.getData().getHeight() < 85) && (box.getData().getHeight() > 15)) && (box.getData().getWidth() > maxXDistForWord - 2);
+    	return ((box.getData().getWidth() / box.getData().getHeight() > .2) && (box.getData().getWidth() < 500)  || (box.getData().getHeight() < 85) && (box.getData().getHeight() > 15)) && (box.getData().getWidth() > maxXDistForWord - 2);
     }
     
     public Rectangle getWordBounds(List<Component> letters)
@@ -643,6 +670,26 @@ public class Model
     	}
 
     	return new Rectangle((int)left, (int)top, (int)(right-left), (int)(bottom-top));
+    }
+    
+    public float getWordRatio(List<Component> letters)
+    {
+    	double top = letters.get(0).getData().getY();
+    	double bottom = letters.get(0).getData().getY() + letters.get(0).getData().getHeight();
+    	int totalHeight = 0;
+    	
+    	for(Component c : letters){
+    		if(c.getData().getY() < top)
+    			top = c.getData().getY();
+    		
+    		if(c.getData().getY() + c.getData().getHeight() > bottom)
+    			bottom = c.getData().getY() + c.getData().getHeight();
+    		
+    		totalHeight += c.getData().getHeight();
+    	}
+    	
+    	return (float) ((bottom - top)/(totalHeight/letters.size()));
+    	
     	
     }
     

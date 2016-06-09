@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
@@ -24,18 +23,11 @@ class Canvas extends JPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private static final int minArea = 300;
-	private static final int maxArea = 15000;
-	private static final int minInnerWidth = 7;
-	private static final int minOuterWidth = 20;
-	private static final int minTableSide = 100;
 	private Model model;
 	private View view;
 	private double scale;
 
 	private CanvasMouseListener mouseListener;
-	
-	private List<Component> deleteThis;
 
 	/**
 	 * The default constructor should NEVER be called. It is made private so
@@ -62,7 +54,6 @@ class Canvas extends JPanel {
 		this.scale = 1;
 		mouseListener = new CanvasMouseListener(model, view, controller);
 		addMouseListener(mouseListener);
-		deleteThis = new ArrayList<Component>();
 	}
 
 	/**
@@ -93,13 +84,6 @@ class Canvas extends JPanel {
 				g2.drawImage(image, 0, 0, null);
 
 			}
-			
-			List<Component> deleteThis = model.deleteThisMethod();
-			for(Component c : deleteThis){
-				g2.setColor(Color.MAGENTA);
-				g2.draw(c.getData());
-				g2.fillRect((int)c.getData().getX(), (int)c.getData().getY(), (int)c.getData().getWidth(), (int)c.getData().getHeight());
-			}
 
 			
 		} else {
@@ -110,50 +94,24 @@ class Canvas extends JPanel {
 		
 		List<Component> components = model.getComponents();
 		List<Rectangle> rects = model.getRects();
-		List<Component> possibleStarts = model.getWords();
-		
-		g2.setColor(Color.BLUE);
-		for(Component c : possibleStarts){
-			g2.draw(c.getData());
-		}
 		
 		if (view.getIsBoxDisplayEnabled() && !components.isEmpty()) {
 			Color col = g2.getColor();
 			for (Component component : components) {
-				int biggestBoxLeft = (int) model.getBiggestBox().getData().getX();
-				int biggestBoxRight = biggestBoxLeft + (int) model.getBiggestBox().getData().getWidth();
-				int biggestBoxHeight = (int) model.getBiggestBox().getData().getHeight();
-				int componentX = (int) component.getData().getX();
-				
-				boolean isWithinTable = (biggestBoxHeight > minTableSide && biggestBoxRight - biggestBoxLeft > minTableSide) ? (componentX > biggestBoxLeft && componentX < biggestBoxRight) : true;
-				double area = component.getData().getWidth() * component.getData().getHeight();
-
-				if(area < minArea || area > maxArea)
-					g2.setColor(Color.RED);
-				else if(area < maxArea)
-					g2.setColor(Color.GREEN);
-
-				if(component.getData().getWidth() < (isWithinTable ? minInnerWidth : minOuterWidth))
-					g2.setColor(Color.RED);
+				g2.setColor(Color.BLUE);
 				
 				g2.draw(component.getData());
 			}
 			
-			g2.setColor(Color.YELLOW);
+			g2.setColor(Color.GREEN);
 			
 			for(Component c : model.getFinalBounds().get(Model.LineTypes.MATH))
 				g2.draw(c.getData());
 			
-			g2.setColor(Color.ORANGE);
+			g2.setColor(Color.RED);
 			
 			for(Component c : model.getFinalBounds().get(Model.LineTypes.WORD))
 				g2.draw(c.getData());
-			
-			g2.setColor(Color.MAGENTA);
-			
-			for(Component c : deleteThis){
-				g2.fill(c.getData());
-			}
 			
 			g2.setColor(col);
 			

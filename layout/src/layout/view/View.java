@@ -319,7 +319,7 @@ public class View extends JFrame
     public void takeScreenshots(String directory){
     	Map<LineTypes, ArrayList<Component>> finalBounds = model.getFinalBounds();
     	
-    	for(int i = 0; i < finalBounds.get(Model.LineTypes.MATH).size(); i++){
+    	for(int i = 1; i < finalBounds.get(Model.LineTypes.MATH).size(); i++){
     		Rectangle r = finalBounds.get(Model.LineTypes.MATH).get(i).getData();
     		
     		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
@@ -332,7 +332,7 @@ public class View extends JFrame
 			}
     	}
     	
-    	for(int i = 0; i < finalBounds.get(Model.LineTypes.WORD).size(); i++){
+    	for(int i = 1; i < finalBounds.get(Model.LineTypes.WORD).size(); i++){
     		Rectangle r = finalBounds.get(Model.LineTypes.WORD).get(i).getData();
     		
     		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());

@@ -504,6 +504,8 @@ public class Model
 		List<Integer> primarySortedLineTypeIndices = new ArrayList<Integer>(getLineTypes().get(keys.get(index)).keySet()); 
 		Collections.sort(primarySortedLineTypeIndices);
 		
+		int right = 0;
+		
 		for(int i = 0; i < primarySortedLineTypeIndices.size(); i++){
 			if(getLineTypes().get(keys.get(index)).get(i) == null || !getLineTypes().get(keys.get(index)).get(i).equals(lineType))
 				continue;
@@ -512,19 +514,21 @@ public class Model
 			int end = i == primarySortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(keys.get(index)).size() - 1 : primarySortedLineTypeIndices.get(i + 1) - 1;
 			
 			Component startComponent = getPartitionedPossibleStarts().get(keys.get(index)).get(start);
-			Component endComponent = getPartitionedPossibleStarts().get(keys.get(index)).get(end);
 			
 			int[] wordLettersKey = null;
 			
-			for(int[] ai : getWordLetters().keySet()){
-				if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
-					wordLettersKey = ai;
-					break;
+			for(int j = start; j <= end; j++){
+				Component currentComponent = getPartitionedPossibleStarts().get(keys.get(index)).get(j);
+				for(int[] ai : getWordLetters().keySet()){
+					if(ai[0] == currentComponent.getData().getX() && ai[1] == currentComponent.getData().getY()){
+						wordLettersKey = ai;
+						break;
+					}
 				}
+				right = Math.max((int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX(), right);
 			}
 			
 			int left = (int)startComponent.getData().getX();
-			int right = (int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX();
 			int[] element = new int[] {left, right};
 			
 			widths.add(element);
@@ -544,19 +548,21 @@ public class Model
 				int end = j == sortedLineTypeIndices.size() - 1 ? getPartitionedPossibleStarts().get(key).size() - 1 : sortedLineTypeIndices.get(j + 1) - 1;
 				
 				Component startComponent = getPartitionedPossibleStarts().get(key).get(start);
-				Component endComponent = getPartitionedPossibleStarts().get(key).get(end);
 				
 				int[] wordLettersKey = null;
 				
-				for(int[] ai : getWordLetters().keySet()){
-					if(ai[0] == endComponent.getData().getX() && ai[1] == endComponent.getData().getY()){
-						wordLettersKey = ai;
-						break;
+				for(int k = start; k <= end; k++){
+					Component currentComponent = getPartitionedPossibleStarts().get(key).get(k);
+					for(int[] ai : getWordLetters().keySet()){
+						if(ai[0] == currentComponent.getData().getX() && ai[1] == currentComponent.getData().getY()){
+							wordLettersKey = ai;
+							break;
+						}
 					}
+					right = Math.max((int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX(), right);
 				}
 				
 				int left = (int)startComponent.getData().getX();
-				int right = (int)getWordBounds(getWordLetters().get(wordLettersKey)).getMaxX();
 				
 				for(int k = 0; k < widths.size(); k++){
 					Component primary = output.get(k);

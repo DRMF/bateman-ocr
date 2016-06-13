@@ -11,7 +11,7 @@ import layout.controller.Controller;
 import layout.model.Model;
 import layout.view.View;
 
-public class ToggleBoxAction extends AbstractAction {
+public class ZoomResetAction extends AbstractAction {
 	/**
 	 * 
 	 */
@@ -23,14 +23,14 @@ public class ToggleBoxAction extends AbstractAction {
 	private Controller controller;
 
 	{
-		putValue(NAME, "Toggle Box");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
-		putValue(SHORT_DESCRIPTION, "Toggles display of bounding boxes");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
+		putValue(NAME, "Zoom Reset");
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoomreset.png")));
+		putValue(SHORT_DESCRIPTION, "Fits the width of the image to the window");
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_0, ActionEvent.CTRL_MASK));
 
 	}
 
-	public ToggleBoxAction(Model model, View view, Controller controller)
+	public ZoomResetAction(Model model, View view, Controller controller)
 	    {
 	        this.view = view;
 	        this.model = model;
@@ -38,6 +38,6 @@ public class ToggleBoxAction extends AbstractAction {
 	    }
 
 	public void actionPerformed(ActionEvent e) {
-		view.toggleBoxDisplay();
+		view.setScale(1);
 	}
 }

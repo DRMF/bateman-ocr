@@ -11,6 +11,10 @@ public class Component {
 		data = new Rectangle(x, y, w, h);
 	}
 	
+	public Component(Rectangle word) {
+		data = new Rectangle((int)word.getX(), (int)word.getY(), (int)word.getWidth(), (int)word.getHeight());
+	}
+
 	public Rectangle getData()
 	{
 		return data;

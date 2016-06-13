@@ -1,9 +1,18 @@
 package layout.view;
 
 import java.awt.BorderLayout;
+import java.awt.Rectangle;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -12,12 +21,20 @@ import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
 
 import layout.controller.Controller;
+import layout.model.Component;
 import layout.model.Model;
+import layout.model.Model.LineTypes;
 import layout.view.actions.ExitAction;
 import layout.view.actions.LongRunningAction;
 import layout.view.actions.OpenAction;
+import layout.view.actions.ScreenshotAction;
 import layout.view.actions.ToggleBoxAction;
 import layout.view.actions.ToggleImageAction;
+import layout.view.actions.ZoomInAction;
+import layout.view.actions.ZoomOutAction;
+import layout.view.actions.ZoomPageAction;
+import layout.view.actions.ZoomResetAction;
+import layout.view.actions.ZoomWidthAction;
 
 /**
  * User: Alan P. Sexton
@@ -31,8 +48,7 @@ public class View extends JFrame
 	 */
 	private static final long serialVersionUID = 1L;
 	private Canvas canvas = null;
-    @SuppressWarnings("unused")
-	private Model model = null;
+    private Model model = null;
     @SuppressWarnings("unused")
 	private Controller controller;
     private JScrollPane canvasScrollPane;
@@ -41,11 +57,22 @@ public class View extends JFrame
     private boolean isBoxDisplayEnabled;
     private AbstractAction toggleImageAction;
     private AbstractAction toggleBoxAction;
+    private AbstractAction zoomInAction;
+    private AbstractAction zoomOutAction;
+    private AbstractAction zoomResetAction;
+    private AbstractAction zoomWidthAction;
+    private AbstractAction zoomPageAction;
+    private AbstractAction screenshotAction;
+    
+    private double scaleFactor;
+    
+    private double maxWidthScaleFactor;
+    private double maxHeightScaleFactor;
 
-    public View(Model model, Controller controller)
+    public View(Model modelObject, Controller controller)
     {
         super("Layout Analyser");
-        this.model = model;
+        this.model = modelObject;
         this.controller = controller;
         controller.addView(this);
 
@@ -65,6 +92,8 @@ public class View extends JFrame
         // exitAction has to be final because we reference it from within
         // an inner class
 
+        scaleFactor = 0.1;
+        
         isImageDisplayEnabled = true;
         isBoxDisplayEnabled = false;
         
@@ -75,6 +104,18 @@ public class View extends JFrame
         toggleImageAction.setEnabled(false);
         toggleBoxAction = new ToggleBoxAction(model, this, controller);
         toggleBoxAction.setEnabled(false);
+        zoomInAction = new ZoomInAction(model, this, controller);
+        zoomInAction.setEnabled(false);
+        zoomOutAction = new ZoomOutAction(model, this, controller);
+        zoomOutAction.setEnabled(false);
+        zoomResetAction = new ZoomResetAction(model, this, controller);
+        zoomResetAction.setEnabled(false);
+        zoomWidthAction = new ZoomWidthAction(model, this, controller);
+        zoomWidthAction.setEnabled(false);
+        zoomPageAction = new ZoomPageAction(model, this, controller);
+        zoomPageAction.setEnabled(false);
+        screenshotAction = new ScreenshotAction(model, this, controller);
+        screenshotAction.setEnabled(false);
         
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -85,6 +126,44 @@ public class View extends JFrame
                 exitAction.actionPerformed(null);
             }
         });
+        
+        addComponentListener(new ComponentListener() {
+
+			@Override
+			public void componentHidden(ComponentEvent arg0) {
+				
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent arg0) {
+				
+			}
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+		    	double canvasScrollPaneWidth = (double)canvasScrollPane.getViewport().getSize().width;
+		    	double canvasScrollPaneHeight= (double)canvasScrollPane.getViewport().getSize().height;
+		    	double modelWidth = (double)model.getDimensions().width;
+		    	double modelHeight = (double)model.getDimensions().height;
+		    	int verticalScrollBarWidth = canvasScrollPane.getVerticalScrollBar().getPreferredSize().width;
+		    	int horizontalScrollBarHeight = canvasScrollPane.getHorizontalScrollBar().getPreferredSize().height;
+		    	
+		    	maxWidthScaleFactor = canvasScrollPaneWidth / modelWidth;
+		    	maxHeightScaleFactor = canvasScrollPaneHeight / modelHeight;
+		    	
+		    	//Take the size of the scroll bars into account
+		    	if(maxWidthScaleFactor > maxHeightScaleFactor && maxHeightScaleFactor > 1)
+		    		maxWidthScaleFactor = (canvasScrollPaneWidth - verticalScrollBarWidth) /  modelWidth;
+		    	else if(maxWidthScaleFactor > maxHeightScaleFactor && maxWidthScaleFactor > 1)
+		    		maxHeightScaleFactor = (canvasScrollPaneHeight- horizontalScrollBarHeight) / modelHeight;
+			}
+
+			@Override
+			public void componentShown(ComponentEvent e) {
+				
+			}
+        	
+        });
 
         // Set up the menu bar
         JMenu fileMenu;
@@ -93,6 +172,14 @@ public class View extends JFrame
         fileMenu.add(longRunningAction);
         fileMenu.add(toggleImageAction);
         fileMenu.add(toggleBoxAction);
+        fileMenu.addSeparator();
+        fileMenu.add(zoomInAction);
+        fileMenu.add(zoomOutAction);
+        fileMenu.add(zoomResetAction);
+        fileMenu.add(zoomWidthAction);
+        fileMenu.add(zoomPageAction);
+        fileMenu.addSeparator();
+        fileMenu.add(screenshotAction);
         fileMenu.addSeparator();
         fileMenu.add(exitAction);
 
@@ -114,6 +201,14 @@ public class View extends JFrame
         toolBar.add(longRunningAction);
         toolBar.add(toggleImageAction);
         toolBar.add(toggleBoxAction);
+        toolBar.addSeparator();
+        toolBar.add(zoomInAction);
+        toolBar.add(zoomOutAction);
+        toolBar.add(zoomResetAction);
+        toolBar.add(zoomWidthAction);
+        toolBar.add(zoomPageAction);
+        toolBar.addSeparator();
+        toolBar.add(screenshotAction);
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -125,6 +220,28 @@ public class View extends JFrame
     {
     	toggleImageAction.setEnabled(true);
     	toggleBoxAction.setEnabled(true);
+    	zoomInAction.setEnabled(true);
+    	zoomOutAction.setEnabled(true);
+    	zoomResetAction.setEnabled(true);
+    	zoomWidthAction.setEnabled(true);
+    	zoomPageAction.setEnabled(true);
+    	screenshotAction.setEnabled(true);
+    	
+    	double canvasScrollPaneWidth = (double)canvasScrollPane.getViewport().getSize().width;
+    	double canvasScrollPaneHeight= (double)canvasScrollPane.getViewport().getSize().height;
+    	double modelWidth = (double)model.getDimensions().width;
+    	double modelHeight = (double)model.getDimensions().height;
+    	int verticalScrollBarWidth = canvasScrollPane.getVerticalScrollBar().getPreferredSize().width;
+    	int horizontalScrollBarHeight = canvasScrollPane.getHorizontalScrollBar().getPreferredSize().height;
+    	
+    	maxWidthScaleFactor = canvasScrollPaneWidth / modelWidth;
+    	maxHeightScaleFactor = canvasScrollPaneHeight / modelHeight;
+    	
+    	if(maxWidthScaleFactor > maxHeightScaleFactor)
+    		maxWidthScaleFactor = (canvasScrollPaneWidth - verticalScrollBarWidth) /  modelWidth;
+    	else
+    		maxHeightScaleFactor = (canvasScrollPaneHeight- horizontalScrollBarHeight) / modelHeight;
+    	
         setCanvasSize();
         canvas.repaint();
     }
@@ -168,5 +285,80 @@ public class View extends JFrame
     public void toggleBoxDisplay(){
     	isBoxDisplayEnabled = !isBoxDisplayEnabled;
     	canvas.repaint();
+    }
+    
+    public void setScale(double scale){
+    	canvas.setScale(scale);
+    	setCanvasSize();
+    	canvas.repaint();
+    	
+    	//rounded because of inherent computing errors with doubles
+    	if(Math.round((scale - scaleFactor) * 10000.0) / 10000.0 <= 0)
+    		zoomOutAction.setEnabled(false);
+    	else
+    		zoomOutAction.setEnabled(true);
+    	
+    	if(scale == 1)
+    		zoomResetAction.setEnabled(false);
+    	else
+    		zoomResetAction.setEnabled(true);
+    	
+    	if(scale == maxWidthScaleFactor)
+    		zoomWidthAction.setEnabled(false);
+    	else
+    		zoomWidthAction.setEnabled(true);
+    	
+    	if((maxHeightScaleFactor > maxWidthScaleFactor && scale == maxWidthScaleFactor) || (maxHeightScaleFactor < maxWidthScaleFactor && scale == maxHeightScaleFactor))
+    		zoomPageAction.setEnabled(false);
+    	else
+    		zoomPageAction.setEnabled(true);
+    		
+    	
+    }
+    
+    public void takeScreenshots(String directory){
+    	Map<LineTypes, ArrayList<Component>> finalBounds = model.getFinalBounds();
+    	
+    	for(int i = 1; i < finalBounds.get(Model.LineTypes.MATH).size(); i++){
+    		Rectangle r = finalBounds.get(Model.LineTypes.MATH).get(i).getData();
+    		
+    		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+    		
+    		File file = new File(directory + "/Math" + i + ".jpg");
+    		try {
+				ImageIO.write(portion, "jpg", file);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	
+    	for(int i = 1; i < finalBounds.get(Model.LineTypes.WORD).size(); i++){
+    		Rectangle r = finalBounds.get(Model.LineTypes.WORD).get(i).getData();
+    		
+    		BufferedImage portion = model.getImage().getSubimage((int)r.getX(), (int)r.getY(), (int)r.getWidth(), (int)r.getHeight());
+    		
+    		File file = new File(directory + "/Word" + i + ".jpg");
+    		try {
+				ImageIO.write(portion, "jpg", file);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    public double getScale(){
+    	return canvas.getScale();
+    }
+    
+    public double getScaleFactor(){
+    	return scaleFactor;
+    }
+    
+    public double getMaxWidthScaleFactor(){
+    	return maxWidthScaleFactor;
+    }
+    
+    public double getMaxHeightScaleFactor(){
+    	return maxHeightScaleFactor;
     }
 }

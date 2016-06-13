@@ -1,6 +1,7 @@
 package layout.view.actions;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -25,7 +26,7 @@ public class ToggleImageAction extends AbstractAction {
 		putValue(NAME, "Toggle Image");
 		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/toggleimage.png")));
 		putValue(SHORT_DESCRIPTION, "Toggles display of image");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke("control I"));
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_I, ActionEvent.CTRL_MASK));
 
 	}
 

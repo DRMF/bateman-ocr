@@ -11,7 +11,7 @@ import layout.controller.Controller;
 import layout.model.Model;
 import layout.view.View;
 
-public class ToggleBoxAction extends AbstractAction {
+public class ZoomPageAction extends AbstractAction {
 	/**
 	 * 
 	 */
@@ -23,14 +23,14 @@ public class ToggleBoxAction extends AbstractAction {
 	private Controller controller;
 
 	{
-		putValue(NAME, "Toggle Box");
-		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/togglebox.png")));
-		putValue(SHORT_DESCRIPTION, "Toggles display of bounding boxes");
-		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
+		putValue(NAME, "Zoom Width");
+		putValue(SMALL_ICON, new ImageIcon(getClass().getResource("/layout/icons/zoompage.png")));
+		putValue(SHORT_DESCRIPTION, "Fits the whole image into the canvas");
+		putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_P, ActionEvent.CTRL_MASK));
 
 	}
 
-	public ToggleBoxAction(Model model, View view, Controller controller)
+	public ZoomPageAction(Model model, View view, Controller controller)
 	    {
 	        this.view = view;
 	        this.model = model;
@@ -38,6 +38,12 @@ public class ToggleBoxAction extends AbstractAction {
 	    }
 
 	public void actionPerformed(ActionEvent e) {
-		view.toggleBoxDisplay();
+		double scale = 1;
+		if(view.getMaxHeightScaleFactor() > view.getMaxWidthScaleFactor())
+			scale = view.getMaxWidthScaleFactor();
+		else
+			scale = view.getMaxHeightScaleFactor();
+		
+		view.setScale(scale);
 	}
 }

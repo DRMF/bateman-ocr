@@ -2,6 +2,7 @@ package gte.view;
 
 import gte.controller.Controller;
 import gte.model.Model;
+import gte.model.Component;
 
 import javax.swing.*;
 import java.awt.Color;
@@ -29,6 +30,8 @@ class Canvas extends JPanel
 	private View view;
 
     private CanvasMouseListener mouseListener;
+    private CanvasKeyboardListener keyboardListener;
+    private boolean hasFocus = false;
 
     /**
      * The default constructor should NEVER be called. It is made private so that no other class can create a
@@ -50,7 +53,9 @@ class Canvas extends JPanel
         this.view = view;
         this.model = model;
         mouseListener = new CanvasMouseListener(model, view, controller);
+        keyboardListener = new CanvasKeyboardListener(model, view, controller);
         addMouseListener(mouseListener);
+        addKeyListener(keyboardListener);
     }
 
 
@@ -70,25 +75,44 @@ class Canvas extends JPanel
         // The ViewPort is the part of the canvas that is displayed.
         // By scrolling the ViewPort, you move it across the full size canvas,
         // showing only the ViewPort sized window of the canvas at any one time.
-
-        if (model.getImage() != null)
+        if (view.getToggled()) {
+            List<Rectangle> rects = model.getRects();
+            g2.scale(view.getZoomLevel(), view.getZoomLevel());
+            //g2.setColor(Color.WHITE);
+            for (Component c : model.getComps()) {
+                g2.drawImage(c.getHeldImage(), c.getImageCoords().x, c.getImageCoords().y, null);
+            }
+            if (!rects.isEmpty()) {
+                Color col = g2.getColor();
+                g2.setColor(Color.BLUE);
+                for (Rectangle rect : rects) {
+                    g2.draw(rect);
+                }
+                g2.setColor(col);
+            }
+            // In case there is some animation going on (e.g. mouse dragging), call this to
+            // paint the intermediate images
+            this.updateUI();
+            mouseListener.paint(g);
+        }
+        else if (model.getImage() != null)
         {
             BufferedImage image = model.getImage();
             List<Rectangle> rects = model.getRects();
 
             // Draw the display image on the full size canvas
+            g2.scale(view.getZoomLevel(), view.getZoomLevel());
             g2.drawImage(image, 0, 0, null);
 
-            if (!rects.isEmpty())
-            {
+            if (!rects.isEmpty()) {
                 Color col = g2.getColor();
                 g2.setColor(Color.BLUE);
-                for (Rectangle rect : rects)
-                {
+                for (Rectangle rect : rects) {
                     g2.draw(rect);
                 }
                 g2.setColor(col);
             }
+            this.updateUI();
             // In case there is some animation going on (e.g. mouse dragging), call this to
             // paint the intermediate images
             mouseListener.paint(g);
@@ -99,8 +123,8 @@ class Canvas extends JPanel
     public Dimension getPreferredSize()
     {
         if (model.isActive())
-            return new Dimension(model.getImage().getWidth(),
-                                 model.getImage().getHeight());
+            return new Dimension((int)(model.getImage().getWidth()*view.getZoomLevel()),
+                    (int)(model.getImage().getHeight()*view.getZoomLevel()));
         return new Dimension(0, 0);
     }
 

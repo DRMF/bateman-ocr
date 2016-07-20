@@ -69,6 +69,7 @@ public class OpenAction extends AbstractAction
             if (result == JFileChooser.APPROVE_OPTION)
             {
                 File f = imageFileChooser.getSelectedFile();
+                model.clearComps();
                 controller.loadImage(f);
             }
         }

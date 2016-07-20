@@ -24,6 +24,8 @@ public class Controller
     Model model;
     View view;
 
+
+
     /**
      * In this version of the MVC model, the <code>View</code> has to have a reference to the <code>Controller</code>
      * so that it can inform it of view events. Hence create the <code>View</code> (with the <code>Controller</code>
@@ -59,6 +61,7 @@ public class Controller
     public void loadImage(File file)
             throws IOException, UnsupportedImageTypeException
     {
+        view.setPageNum(0);
         model.loadImage(file);
         view.adaptToNewImage();
     }
